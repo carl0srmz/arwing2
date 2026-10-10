@@ -1,0 +1,39 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: build
+        shell: cmd
+        run: |
+          mkdir build\gen
+          python -I tools\asm.py asm\sf2.s build\sf2.sfc build\ir.json || exit /b 1
+          python -I tools\recomp.py build\ir.json build\gen || exit /b 1
+          call build.bat || exit /b 1
+      - name: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -f 1.0
+          git push -f origin refs/tags/1.0
+          gh release view 1.0 >/dev/null 2>&1 || gh release create 1.0 --title "1.0" --notes "Run arwing.exe to install. You need your own Star Fox 2 ROM (SNES Classic / Mini release)."
+          gh release upload 1.0 build/arwing.exe --clobber

@@ -1,0 +1,6 @@
+00fbb8 Reset
+03e985 MainInit
+00010c IrqHandler
+03acdc CopyRamOverlays
+7f18a7 AllocBlock
+018000 GsuEntryTable
