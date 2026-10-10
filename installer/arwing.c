@@ -95,6 +95,11 @@ static void pick_dir(void) {
   CoTaskMemFree(id);
 }
 
+static void play(void) {
+  wchar_t exe[MAX_PATH]; join(exe, dir, EXE);
+  ShellExecuteW(NULL, L"open", exe, NULL, dir, SW_SHOWNORMAL);
+}
+
 static void frame(const char *tag) {
   logo(8, 2);
   text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing");
@@ -123,11 +128,7 @@ static int step(void) {
     frame("DONE");
     text(18, 48, f_item, C_TEXT, "Installed.");
     text(18, 64, f_small, C_DIM, "Pick your ROM on first launch.");
-    if (gfx_button(18, y, 84, "Play")) {
-      wchar_t exe[MAX_PATH]; join(exe, dir, EXE);
-      ShellExecuteW(NULL, L"open", exe, NULL, dir, SW_SHOWNORMAL);
-      return 1;
-    }
+    if (gfx_button(18, y, 84, "Play")) { play(); return 1; }
     if (gfx_button(108, y, 84, "Close") || gfx_key == VK_ESCAPE) return 1;
     break;
   case 2: case 12:
@@ -147,6 +148,18 @@ static int step(void) {
     text(18, 48, f_item, C_TEXT, "Removed.");
     if (gfx_button(18, y, 84, "Close") || gfx_key == VK_ESCAPE) return 1;
     break;
+  case 20: {
+    static int frames;
+    frame("UPDATE");
+    text(18, 48, f_item, C_TEXT, "Updating...");
+    if (++frames == 2) {
+      for (int i = 0; i < 40 && (err = install()); i++) Sleep(250);
+      if (err) { page = 2; break; }
+      play();
+      return 1;
+    }
+    break;
+  }
   }
   return 0;
 }
@@ -164,7 +177,12 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE prev, PWSTR cmdline, int show) {
       wchar_t d[MAX_PATH]; d[0] = 0;
       SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, d);
       swprintf(dir, MAX_PATH, L"%s\\Programs\\%s", d, APP);
+    } else if (wcsstr(cmdline, L"--update")) {
+      wchar_t lnk[MAX_PATH];
+      special(CSIDL_DESKTOPDIRECTORY, APP L".lnk", lnk);
+      desk = GetFileAttributesW(lnk) != INVALID_FILE_ATTRIBUTES;
+      page = 20;
     }
   }
-  return gfx_window(page ? L"Uninstall Project Arwing" : L"Install Project Arwing", 320, 160, step) > 0 ? 0 : 1;
+  return gfx_window(page == 20 ? L"Update Project Arwing" : page ? L"Uninstall Project Arwing" : L"Install Project Arwing", 320, 160, step) > 0 ? 0 : 1;
 }

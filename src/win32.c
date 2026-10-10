@@ -86,9 +86,8 @@ double plat_time(void) {
   return (double)t.QuadPart / f.QuadPart;
 }
 
-static int (*thread_fn)(void *);
-static DWORD WINAPI thread_main(LPVOID arg) { return (DWORD)thread_fn(arg); }
-void *plat_thread(int (*fn)(void *)) { thread_fn = fn; return CreateThread(NULL, 0, thread_main, NULL, 0, NULL); }
+static DWORD WINAPI thread_main(LPVOID arg) { return (DWORD)((int (*)(void *))arg)(NULL); }
+void *plat_thread(int (*fn)(void *)) { return CreateThread(NULL, 0, thread_main, (LPVOID)fn, 0, NULL); }
 void plat_join(void *t) { WaitForSingleObject(t, INFINITE); CloseHandle(t); }
 
 bool plat_home(void) {

@@ -312,3 +312,5 @@ def gen_gsu(ir, out):
 if __name__ == '__main__':
     main()
     gen_gsu(json.load(open(sys.argv[1]))['ir'], sys.argv[2])
+    with open(os.path.join(sys.argv[2], 'build_id.c'), 'w', newline='\n') as f:
+        f.write('const char build_id[] = "%s";\n' % os.environ.get('BUILD_ID', ''))

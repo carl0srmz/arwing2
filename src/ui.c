@@ -170,11 +170,14 @@ static void draw_controls(void) {
 static bool k_up, k_dn, k_lt, k_rt, k_ok, k_bk, k_tab; static int r_up, r_dn, r_lt, r_rt, r_ok, r_bk, r_tab;
 static int mouse_x, mouse_y; static bool mouse_click, mouse_was;
 static int wheel;
+static Rect ubtn;
 void ui_mouse(int x, int y, bool down, int wheel_delta) { mouse_x = x; mouse_y = y; if (down && !mouse_was) mouse_click = true; mouse_was = down; wheel += wheel_delta; }
 
 void ui_init(void) { sel = 0; page = 0; capture = 0; }
 
 UiResult ui_frame(bool in_game) {
+  if (!in_game) update_start_check();
+  if (update_apply()) return UI_QUIT;
   build_items(in_game);
   if (sel >= nitems) sel = nitems - 1;
   UiResult res = UI_NONE;
@@ -213,6 +216,7 @@ UiResult ui_frame(bool in_game) {
     }
   } else {
     int mx = mouse_x / px, my = mouse_y / px, ytop = TOP + 10;
+    if (update_ready() && ((mouse_click && mx >= ubtn.x && mx < ubtn.x + ubtn.w && my >= ubtn.y && my < ubtn.y + ubtn.h) || input_key('U'))) update_download();
     if (mouse_x >= 0 && mx >= 6 && mx < 6 + list_w() && my >= ytop) {
       int i = (my - ytop) / row_h();
       hover = i < nitems ? i : -1;
@@ -243,6 +247,14 @@ UiResult ui_frame(bool in_game) {
   logo(8, 2);
   text_r(cw - 8, 10, f_small, C_DIM, in_game ? "Paused" : "brought to you by carlos ramirez :)");
   if (page == 1) draw_controls(); else draw_settings(in_game);
+  ubtn.w = 0;
+  if (page == 0 && !in_game && update_label()) {
+    const char *l = update_label();
+    int w = text_w(f_tab, l) + 10;
+    ubtn = (Rect){ cw - 8 - w, ch - 15, w, 13 };
+    if (update_ready()) { panel(ubtn.x, ubtn.y, w, 13, C_ROW, C_SEL); text(ubtn.x + 5, ubtn.y + 1, f_tab, C_SEL, l); }
+    else text_r(cw - 8, ch - 13, f_tab, C_DIM, l);
+  }
   Rect pr = preview_rect();
   if (page == 0 && !sc1x[0]) text(pr.x + (pr.w - text_w(f_small, "Warming up...")) / 2, pr.y + pr.h / 2 - 6, f_small, C_DIM, "Warming up...");
   GdiFlush();

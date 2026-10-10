@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  BUILD_ID: ${{ github.sha }}
+
 permissions:
   contents: write
 
@@ -275,8 +278,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git tag -f 1.0
-          git push -f origin refs/tags/1.0
           gh release view 1.0 >/dev/null 2>&1 || gh release create 1.0 --title "1.0" --notes "Run arwing.exe to install. You need your own Star Fox 2 ROM (SNES Classic / Mini release)."
           gh release upload 1.0 dist/arwing.exe --clobber
           notes="Windows: run arwing.exe to install."
@@ -293,3 +294,5 @@ jobs:
             notes="$notes ARM Linux: use arwing-linux-aarch64.AppImage."
           fi
           gh release edit 1.0 --notes "$notes You need your own Star Fox 2 ROM (SNES Classic / Mini release)."
+          git tag -f 1.0
+          git push -f origin refs/tags/1.0
