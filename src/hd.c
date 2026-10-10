@@ -78,7 +78,7 @@ void hd_plot(u8 x, u8 y, u8 color) {
   u8 *ch = char_for(x, y);
   if (!ch) return;
   int n = N(), w = 8 * n;
-  for (int sy = 0; sy < n; sy++) memset(&ch[((y & 7) * n + sy) * w + (x & 7) * n], color, n);
+  for (int sy = 0; sy < n; sy++) memset(&ch[((y & 7) * n + sy) * w + (x & 7) * n], color & 15, n);
 }
 
 typedef struct { float x, y; } V2;

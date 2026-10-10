@@ -80,8 +80,8 @@ static void change(Item *it, int dir) {
   *it->val = v;
 }
 
-static bool nav(int vk, int pb, bool *held, int *rep) {
-  bool down = input_key(vk) || (pb >= 0 && (input_pad_buttons() & (1u << pb)));
+static bool nav(int vk, u32 pm, bool *held, int *rep) {
+  bool down = input_key(vk) || (input_pad_buttons() & pm);
   bool fire = false;
   if (down && !*held) { fire = true; *rep = 18; }
   else if (down && --*rep <= 0) { fire = true; *rep = 5; }
@@ -178,11 +178,11 @@ UiResult ui_frame(bool in_game) {
   build_items(in_game);
   if (sel >= nitems) sel = nitems - 1;
   UiResult res = UI_NONE;
-  bool up = nav(VK_UP, PB_DUP, &k_up, &r_up) | 0, dn = nav(VK_DOWN, PB_DDOWN, &k_dn, &r_dn);
-  bool lt = nav(VK_LEFT, PB_DLEFT, &k_lt, &r_lt), rt = nav(VK_RIGHT, PB_DRIGHT, &k_rt, &r_rt);
-  bool ok = nav(VK_RETURN, PB_SOUTH, &k_ok, &r_ok), bk = nav(VK_ESCAPE, PB_EAST, &k_bk, &r_bk), tb = nav(VK_TAB, PB_NORTH, &k_tab, &r_tab);
-  u32 pads = input_pad_buttons();
-  if (pads & (1u << PB_LS_UP)) up |= nav(0, PB_LS_UP, &k_up, &r_up);
+#define PM(a, b) ((1u << (a)) | (1u << (b)))
+  bool up = nav(VK_UP, PM(PB_DUP, PB_LS_UP), &k_up, &r_up), dn = nav(VK_DOWN, PM(PB_DDOWN, PB_LS_DOWN), &k_dn, &r_dn);
+  bool lt = nav(VK_LEFT, PM(PB_DLEFT, PB_LS_LEFT), &k_lt, &r_lt), rt = nav(VK_RIGHT, PM(PB_DRIGHT, PB_LS_RIGHT), &k_rt, &r_rt);
+  bool ok = nav(VK_RETURN, 1u << PB_SOUTH, &k_ok, &r_ok), bk = nav(VK_ESCAPE, 1u << PB_EAST, &k_bk, &r_bk), tb = nav(VK_TAB, 1u << PB_NORTH, &k_tab, &r_tab);
+#undef PM
   canvas_ensure(video_width(), video_height());
 
   if (page == 1) {
