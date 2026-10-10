@@ -34,18 +34,44 @@ static bool pick(FILE **f) {
   return true;
 }
 #else
-#include <CommonCrypto/CommonDigest.h>
-bool mac_pick(bool dir, char *out, int n);
+static u32 rol(u32 x, int n) { return x << n | x >> (32 - n); }
 
 static void sha1_hex(const u8 *d, long n, char out[41]) {
-  unsigned char b[CC_SHA1_DIGEST_LENGTH];
-  CC_SHA1(d, (CC_LONG)n, b);
-  for (int i = 0; i < 20; i++) sprintf(out + i * 2, "%02x", b[i]);
+  u32 h[5] = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
+  u64 bits = (u64)n * 8;
+  long total = (n + 72) & ~63L;
+  for (long off = 0; off < total; off += 64) {
+    u32 w[80];
+    for (int i = 0; i < 64; i++) {
+      long k = off + i;
+      u32 b = k < n ? d[k] : k == n ? 0x80 : k >= total - 8 ? (u32)(bits >> (8 * (total - 1 - k))) & 255 : 0;
+      if (!(i & 3)) w[i >> 2] = 0;
+      w[i >> 2] |= b << (24 - 8 * (i & 3));
+    }
+    for (int i = 16; i < 80; i++) w[i] = rol(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+    u32 a = h[0], b = h[1], c = h[2], e4 = h[3], e = h[4];
+    for (int i = 0; i < 80; i++) {
+      u32 f, k;
+      if (i < 20) { f = (b & c) | (~b & e4); k = 0x5a827999; }
+      else if (i < 40) { f = b ^ c ^ e4; k = 0x6ed9eba1; }
+      else if (i < 60) { f = (b & c) | (b & e4) | (c & e4); k = 0x8f1bbcdc; }
+      else { f = b ^ c ^ e4; k = 0xca62c1d6; }
+      u32 t = rol(a, 5) + f + e + k + w[i];
+      e = e4; e4 = c; c = rol(b, 30); b = a; a = t;
+    }
+    h[0] += a; h[1] += b; h[2] += c; h[3] += e4; h[4] += e;
+  }
+  for (int i = 0; i < 20; i++) sprintf(out + i * 2, "%02x", (h[i >> 2] >> (24 - 8 * (i & 3))) & 255);
 }
 
 static bool pick(FILE **f) {
   char p[1024];
-  if (!mac_pick(false, p, sizeof p)) return false;
+  if (gfx_drop[0]) { snprintf(p, sizeof p, "%s", gfx_drop); gfx_drop[0] = 0; }
+  else {
+    int r = plat_pick(false, p, sizeof p);
+    if (r < 0) page = 4;
+    if (r <= 0) return false;
+  }
   *f = fopen(p, "rb");
   return true;
 }
@@ -87,11 +113,14 @@ static int step(void) {
   text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing");
   panel(8, 36, cw - 16, ch - 44, C_PANEL, C_EDGE);
   tab(16, 30, "ROM");
-  static const char *head[] = { "Pick your Star Fox 2 ROM.", "That's not Star Fox 2.", "That's not the SNES Classic (Mini) version.", "Couldn't save the ROM." };
-  static const char *sub[] = { "Only the SNES Classic (Mini) release is tested.", "Try another file.", "It might still work, but it's untested.", "Check the disk and try again." };
+  static const char *head[] = { "Pick your Star Fox 2 ROM.", "That's not Star Fox 2.", "That's not the SNES Classic (Mini) version.", "Couldn't save the ROM.", "No file picker found." };
+  static const char *sub[] = { "Only the SNES Classic (Mini) release is tested.", "Try another file.", "It might still work, but it's untested.", "Check the disk and try again.", "Drop the ROM file on this window." };
   text(18, 48, f_item, C_TEXT, head[page]);
   text(18, 64, f_small, C_DIM, sub[page]);
   int y = ch - 30;
+#ifndef _WIN32
+  if (gfx_drop[0]) { int r = browse(); if (r == 9) return 1; page = r; }
+#endif
   if (page == 2) {
     if (gfx_button(18, y, 84, "Use it")) return save() ? 1 : (page = 3, 0);
     if (gfx_button(108, y, 84, "Pick another")) { int r = browse(); if (r == 9) return 1; page = r; }

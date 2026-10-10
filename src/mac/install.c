@@ -11,7 +11,7 @@
 
 #define APP "Project Arwing.app"
 extern char **environ;
-bool mac_pick(bool dir, char *out, int n);
+void plat_error(const char *msg);
 void mac_dock(const char *app, bool add);
 bool mac_trash(const char *path);
 void mac_register(const char *path);
@@ -122,7 +122,7 @@ static int step(void) {
     int bw = 56, pw = cw - 36 - bw - 6;
     fill(18, 61, pw, 15, C_INSET);
     path_text(22, 62, pw - 7, dir);
-    if (gfx_button(cw - 18 - bw, 61, bw, "Change")) { char p[PATH_MAX]; if (mac_pick(true, p, sizeof p)) snprintf(dir, sizeof dir, "%s", p); }
+    if (gfx_button(cw - 18 - bw, 61, bw, "Change")) { char p[PATH_MAX]; if (plat_pick(true, p, sizeof p) > 0) snprintf(dir, sizeof dir, "%s", p); }
     gfx_check(26, 86, "Add to Dock", &dock);
     gfx_check(130, 86, "Desktop alias", &desk);
     text(18, 104, f_small, C_DIM, old[0] ? "Already installed. This updates it." : "Spotlight finds it either way.");
@@ -156,7 +156,7 @@ static int step(void) {
   return 0;
 }
 
-bool mac_install(void) {
+static bool mac_install(void) {
   if (!bundle_path(self)) return true;
   FILE *f = fopen("install_path", "r");
   if (f) {
@@ -177,4 +177,13 @@ bool mac_install(void) {
   page = 0;
   gfx_window(L"Install Project Arwing", 320, 160, step);
   return false;
+}
+
+bool plat_home(void) {
+  const char *home = getenv("HOME");
+  char d[1024];
+  snprintf(d, sizeof d, "%s/Library/Application Support/Project Arwing", home ? home : "");
+  mkdir(d, 0755);
+  if (chdir(d)) { plat_error("Can't open the data folder."); return false; }
+  return mac_install();
 }

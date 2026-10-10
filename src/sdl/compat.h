@@ -6,7 +6,7 @@
 typedef uint32_t COLORREF;
 typedef int32_t LONG;
 typedef uint32_t DWORD;
-typedef struct MacFont *HFONT;
+typedef struct GfxFont *HFONT;
 #define RGB(r, g, b) ((COLORREF)(((r) & 255) | (((g) & 255) << 8) | (((b) & 255) << 16)))
 #define GdiFlush() ((void)0)
 #define InterlockedExchange(p, v) __atomic_exchange_n((p), (v), __ATOMIC_SEQ_CST)

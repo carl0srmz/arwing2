@@ -1,7 +1,7 @@
 #import <Cocoa/Cocoa.h>
 #include <stdbool.h>
 
-bool mac_pick(bool dir, char *out, int n) {
+int plat_pick(bool dir, char *out, int n) {
   @autoreleasepool {
     NSWindow *key = NSApp.keyWindow;
     NSOpenPanel *p = [NSOpenPanel openPanel];

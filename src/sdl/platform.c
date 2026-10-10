@@ -6,7 +6,7 @@
 
 void ui_mouse(int x, int y, bool down, int wheel_delta);
 void input_event(const SDL_Event *e);
-bool mac_install(void);
+void sdl_icon(SDL_Window *w);
 static SDL_Window *win;
 static SDL_AudioDeviceID dev;
 static float dpi = 1;
@@ -31,6 +31,7 @@ bool plat_open(void) {
   win = SDL_CreateWindow("Star Fox 2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h,
                          SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   if (!win || !SDL_GL_CreateContext(win) || !video_init()) return false;
+  sdl_icon(win);
   resize();
   input_init();
   return true;
@@ -82,13 +83,4 @@ int snd_busy(void) { return (int)(SDL_GetQueuedAudioSize(dev) / 4); }
 bool snd_put(const s16 *pcm, int frames) {
   if (snd_busy() + frames > ABUF_FRAMES * 8) return false;
   return SDL_QueueAudio(dev, pcm, (Uint32)frames * 4) == 0;
-}
-
-bool plat_home(void) {
-  const char *home = getenv("HOME");
-  char d[1024];
-  snprintf(d, sizeof d, "%s/Library/Application Support/Project Arwing", home ? home : "");
-  mkdir(d, 0755);
-  if (chdir(d)) { plat_error("Can't open the data folder."); return false; }
-  return mac_install();
 }

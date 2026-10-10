@@ -12,7 +12,7 @@ rm -rf "$OBJ" "$APP" build/arwing.iconset build/dmg
 mkdir -p "$OBJ"
 export CFLAGS OBJ
 
-for f in src/*.c src/mac/*.c src/mac/*.m build/gen/*.c; do
+for f in src/*.c src/sdl/*.c src/mac/*.c src/mac/*.m build/gen/*.c; do
   case "$f" in src/input.c|src/win32.c) ;; *) echo "$f" ;; esac
 done | xargs -P "$(sysctl -n hw.ncpu)" -I{} sh -c 'case "$1" in *.m) x=-fobjc-arc ;; *) x= ;; esac; clang $CFLAGS $x -c "$1" -o "$OBJ/$(echo "$1" | tr / _).o"' sh {}
 

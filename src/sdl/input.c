@@ -7,7 +7,7 @@ static u32 pad_prev, pad_state;
 #define MAXPAD 8
 static SDL_GameController *pads[MAXPAD]; static int npads;
 
-int mac_vk(const SDL_Keysym *k) {
+int sdl_vk(const SDL_Keysym *k) {
   SDL_Keycode s = k->sym;
   if (s >= 'a' && s <= 'z') return s - 'a' + 'A';
   if (s >= '0' && s <= '9') return s;
@@ -49,7 +49,7 @@ void input_init(void) { SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER); }
 void input_event(const SDL_Event *e) {
   switch (e->type) {
   case SDL_KEYDOWN: case SDL_KEYUP: {
-    int vk = mac_vk(&e->key.keysym);
+    int vk = sdl_vk(&e->key.keysym);
     if (vk <= 0 || vk > 255) break;
     if (e->type == SDL_KEYUP) keys[vk] = false;
     else { if (!keys[vk] && !e->key.repeat) last_key = vk; keys[vk] = true; }
@@ -126,7 +126,12 @@ const char *key_name(int vk) {
   case VK_UP: return "Up"; case VK_DOWN: return "Down"; case VK_LEFT: return "Left"; case VK_RIGHT: return "Right";
   case VK_RETURN: return "Enter"; case VK_RSHIFT: return "Right Shift"; case VK_LSHIFT: return "Left Shift";
   case VK_TAB: return "Tab"; case VK_ESCAPE: return "Esc"; case VK_SPACE: return "Space"; case VK_BACK: return "Backspace";
-  case VK_CONTROL: return "Ctrl"; case VK_MENU: return "Option"; case VK_LWIN: return "Cmd"; case VK_PAUSE: return "Pause";
+#ifdef __APPLE__
+  case VK_MENU: return "Option"; case VK_LWIN: return "Cmd";
+#else
+  case VK_MENU: return "Alt"; case VK_LWIN: return "Super";
+#endif
+  case VK_CONTROL: return "Ctrl"; case VK_PAUSE: return "Pause";
   case VK_INSERT: return "Insert"; case VK_DELETE: return "Delete"; case VK_HOME: return "Home"; case VK_END: return "End";
   case VK_PRIOR: return "Page Up"; case VK_NEXT: return "Page Down";
   case VK_MULTIPLY: return "Num *"; case VK_ADD: return "Num +"; case VK_SUBTRACT: return "Num -";

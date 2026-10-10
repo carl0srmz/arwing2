@@ -34,8 +34,11 @@ typedef BOOL (WINAPI *PFN_wglSwapIntervalEXT)(int);
 static PFN_wglSwapIntervalEXT wglSwapIntervalEXT_;
 #undef F
 static HDC dc; static HGLRC glrc;
-#else
+#elif defined(__APPLE__)
 #include <OpenGL/gl.h>
+#else
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
 #endif
 
 static int win_w = 1, win_h = 1;

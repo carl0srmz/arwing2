@@ -29,7 +29,7 @@ def main():
     elif sys.platform == 'darwin':
         run('sh', 'build_mac.sh')
     else:
-        sys.exit('only the Windows and macOS builds are set up so far')
+        run('sh', 'build_linux.sh')
     print(f"done: {'build/sf2.exe' if os.name == 'nt' else 'build/arwing'}  (run it from the repository root; it loads build/sf2.sfc for game data)")
 
 if __name__ == '__main__':

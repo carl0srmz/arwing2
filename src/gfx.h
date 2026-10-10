@@ -5,7 +5,7 @@
 #endif
 #include <windows.h>
 #else
-#include "mac/compat.h"
+#include "sdl/compat.h"
 #endif
 #include <stdint.h>
 #include <stdbool.h>
@@ -43,6 +43,10 @@ void logo(int x, int y);
 extern HDC mdc;
 extern HWND gfx_hwnd;
 void textw(int x, int y, HFONT f, COLORREF c, const wchar_t *s);
+#else
+extern char gfx_drop[1024];
+int font_height(HFONT f);
+int plat_pick(bool dir, char *out, int n);
 #endif
 extern int gfx_key, gfx_mx, gfx_my;
 extern bool gfx_click, gfx_moved;
