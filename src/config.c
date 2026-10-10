@@ -2,6 +2,10 @@
 
 Settings cfg;
 
+const char *pad_button_names[PB_COUNT] = { "South (A/Cross)", "East (B/Circle)", "West (X/Square)", "North (Y/Triangle)",
+  "L1/LB", "R1/RB", "L2/LT", "R2/RT", "Select/Back", "Start", "L3", "R3", "Home/Guide",
+  "D-pad Up", "D-pad Down", "D-pad Left", "D-pad Right", "Stick Up", "Stick Down", "Stick Left", "Stick Right" };
+
 const char *bind_names[BIND_COUNT] = { "Up", "Down", "Left", "Right", "B", "A", "Y", "X", "L", "R", "Select", "Start",
                                        "Fast forward", "Save state", "Load state", "Menu" };
 
@@ -57,4 +61,21 @@ void cfg_save(const char *path) {
   for (int i = 0; i < BIND_COUNT; i++) fprintf(f, "key_%d = %d ; %s (virtual key)\npad_%d = %d ; %s (pad button + 1)\n",
                                                i, cfg.key[i], bind_names[i], i, cfg.pad[i], bind_names[i]);
   fclose(f);
+}
+
+bool input_bind_down(int b) {
+  if (input_key(cfg.key[b])) return true;
+  return cfg.pad[b] > 0 && (input_pad_buttons() & (1u << (cfg.pad[b] - 1)));
+}
+
+u16 input_snes_mask(void) {
+  static const u16 bits[12] = { 0x800, 0x400, 0x200, 0x100, 0x8000, 0x80, 0x4000, 0x40, 0x20, 0x10, 0x2000, 0x1000 };
+  u16 m = 0;
+  for (int i = 0; i < 12; i++) if (input_bind_down(i)) m |= bits[i];
+  u32 p = input_pad_buttons();
+  if (p & (1u << PB_LS_UP)) m |= 0x800; if (p & (1u << PB_LS_DOWN)) m |= 0x400;
+  if (p & (1u << PB_LS_LEFT)) m |= 0x200; if (p & (1u << PB_LS_RIGHT)) m |= 0x100;
+  if ((m & 0x0c00) == 0x0c00) m &= ~0x0c00;
+  if ((m & 0x0300) == 0x0300) m &= ~0x0300;
+  return m;
 }

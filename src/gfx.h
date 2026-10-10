@@ -1,8 +1,12 @@
 #pragma once
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#else
+#include "mac/compat.h"
+#endif
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -21,12 +25,11 @@ typedef struct { int x, y, w, h; } Rect;
 #define C_COMM RGB(32, 40, 80)
 #define C_LOGO_EDGE RGB(80, 40, 144)
 
-extern HDC mdc; extern uint32_t *canvas; extern int cw, ch;
+extern uint32_t *canvas; extern int cw, ch;
 extern HFONT f_title, f_item, f_small, f_tab;
 void gfx_canvas(int w, int h);
 void fill(int x, int y, int w, int h, COLORREF c);
 void text(int x, int y, HFONT f, COLORREF c, const char *s);
-void textw(int x, int y, HFONT f, COLORREF c, const wchar_t *s);
 int text_w(HFONT f, const char *s);
 void text_r(int xr, int y, HFONT f, COLORREF c, const char *s);
 void text_wrap(Rect r, HFONT f, COLORREF c, const char *s);
@@ -36,8 +39,15 @@ void sparkle(int cx, int cy);
 void stars(void);
 void logo(int x, int y);
 
+#ifdef _WIN32
+extern HDC mdc;
 extern HWND gfx_hwnd;
-extern int gfx_key;
+void textw(int x, int y, HFONT f, COLORREF c, const wchar_t *s);
+#endif
+extern int gfx_key, gfx_mx, gfx_my;
+extern bool gfx_click, gfx_moved;
+void gfx_begin(void);
+int gfx_frame(int (*step)(void), bool shift);
 int gfx_window(const wchar_t *title, int w, int h, int (*step)(void));
 bool gfx_button(int x, int y, int w, const char *label);
 bool gfx_check(int x, int y, const char *label, int *v);

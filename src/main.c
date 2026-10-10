@@ -1,7 +1,3 @@
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <shlobj.h>
-#pragma comment(lib, "shell32.lib")
 #include "snes.h"
 
 static char sram_path[512];
@@ -97,6 +93,8 @@ static u16 script_pad(int frame) {
 }
 
 int app_run(void);
+bool plat_home(void);
+void plat_error(const char *msg);
 
 int main(int argc, char **argv) {
   const char *rom_path = "build/sf2.sfc", *shot_prefix = "shot", *cov_prefix = NULL;
@@ -104,7 +102,8 @@ int main(int argc, char **argv) {
   FILE *hashlog = NULL, *wav = NULL; u32 wav_frames = 0; int wramdump_frame = -1;
   int frames = -1; int shots[256]; int nshots = 0;
   for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
+    if (!strcmp(argv[i], "--version")) { puts("Project Arwing 1.0"); return 0; }
+    else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
     else if (!strcmp(argv[i], "--shot") && i + 1 < argc) { char *p = argv[++i]; while (*p && nshots < 256) { shots[nshots++] = strtol(p, &p, 10); if (*p == ',') p++; else break; } }
     else if (!strcmp(argv[i], "--shotprefix") && i + 1 < argc) shot_prefix = argv[++i];
     else if (!strcmp(argv[i], "--script") && i + 1 < argc) load_script(argv[++i]);
@@ -121,12 +120,8 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "--hashlog") && i + 1 < argc) hashlog = fopen(argv[++i], "w");
     else rom_path = argv[i];
   }
-  if (argc == 1) {
-    SetProcessDPIAware();
-    wchar_t d[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, d))) {
-      wcscat(d, L"\\Project Arwing"); CreateDirectoryW(d, NULL); SetCurrentDirectoryW(d);
-    }
+  if (argc == 1 || (argc == 2 && !strncmp(argv[1], "-psn", 4))) {
+    if (!plat_home()) return 0;
     rom_path = "sf2.sfc";
     bool rom_wizard(void);
     FILE *t = fopen(rom_path, "rb");
@@ -135,7 +130,7 @@ int main(int argc, char **argv) {
   if (!load_rom(rom_path)) {
     char m[700];
     snprintf(m, sizeof m, "Cannot open %s.\n\nBuild it first:  python tools/build.py <your Star Fox 2 ROM>", rom_path);
-    if (frames < 0) MessageBoxA(NULL, m, "Star Fox 2", MB_ICONERROR); else fprintf(stderr, "%s\n", m);
+    if (frames < 0) plat_error(m); else fprintf(stderr, "%s\n", m);
     return 1;
   }
   snprintf(sram_path, sizeof sram_path, "%s.srm", rom_path);

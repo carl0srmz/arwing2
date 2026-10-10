@@ -1,13 +1,15 @@
 #include "app.h"
-#include <commdlg.h>
-#include <wincrypt.h>
-#pragma comment(lib, "comdlg32.lib")
-#pragma comment(lib, "advapi32.lib")
 
 #define SF2_SHA1 "1135a2a6cb786ac7523e81dd553dc81aaa266f51"
 
 static int page;
 static u8 *buf; static long len;
+
+#ifdef _WIN32
+#include <commdlg.h>
+#include <wincrypt.h>
+#pragma comment(lib, "comdlg32.lib")
+#pragma comment(lib, "advapi32.lib")
 
 static void sha1_hex(const u8 *d, long n, char out[41]) {
   HCRYPTPROV p; HCRYPTHASH h; BYTE b[20]; DWORD bl = 20;
@@ -21,8 +23,35 @@ static void sha1_hex(const u8 *d, long n, char out[41]) {
   CryptReleaseContext(p, 0);
 }
 
-static int check(const wchar_t *path) {
-  FILE *f = _wfopen(path, L"rb");
+static bool pick(FILE **f) {
+  wchar_t fn[MAX_PATH] = L"";
+  OPENFILENAMEW o = { sizeof o };
+  o.hwndOwner = gfx_hwnd; o.lpstrFile = fn; o.nMaxFile = MAX_PATH;
+  o.lpstrFilter = L"SNES ROM (*.sfc, *.smc)\0*.sfc;*.smc\0All files\0*.*\0";
+  o.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+  if (!GetOpenFileNameW(&o)) return false;
+  *f = _wfopen(fn, L"rb");
+  return true;
+}
+#else
+#include <CommonCrypto/CommonDigest.h>
+bool mac_pick(bool dir, char *out, int n);
+
+static void sha1_hex(const u8 *d, long n, char out[41]) {
+  unsigned char b[CC_SHA1_DIGEST_LENGTH];
+  CC_SHA1(d, (CC_LONG)n, b);
+  for (int i = 0; i < 20; i++) sprintf(out + i * 2, "%02x", b[i]);
+}
+
+static bool pick(FILE **f) {
+  char p[1024];
+  if (!mac_pick(false, p, sizeof p)) return false;
+  *f = fopen(p, "rb");
+  return true;
+}
+#endif
+
+static int check(FILE *f) {
   if (!f) return 1;
   fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
   if (n & 0x200) { fseek(f, 0x200, SEEK_SET); n -= 0x200; }
@@ -44,13 +73,9 @@ static bool save(void) {
 }
 
 static int browse(void) {
-  wchar_t fn[MAX_PATH] = L"";
-  OPENFILENAMEW o = { sizeof o };
-  o.hwndOwner = gfx_hwnd; o.lpstrFile = fn; o.nMaxFile = MAX_PATH;
-  o.lpstrFilter = L"SNES ROM (*.sfc, *.smc)\0*.sfc;*.smc\0All files\0*.*\0";
-  o.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-  if (!GetOpenFileNameW(&o)) return page;
-  switch (check(fn)) {
+  FILE *f;
+  if (!pick(&f)) return page;
+  switch (check(f)) {
   case 0: return save() ? 9 : 3;
   case 2: return 2;
   default: return 1;

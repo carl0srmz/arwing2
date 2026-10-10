@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release
+  group: build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,12 +28,106 @@ jobs:
           python -I tools\asm.py asm\sf2.s build\sf2.sfc build\ir.json || exit /b 1
           python -I tools\recomp.py build\ir.json build\gen || exit /b 1
           call build.bat || exit /b 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arwing-windows
+          path: build/arwing.exe
+
+  macos:
+    runs-on: macos-14
+    env:
+      SDL_VERSION: 2.30.11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - id: sdl-cache
+        uses: actions/cache@v4
+        with:
+          path: build/sdl
+          key: sdl-${{ env.SDL_VERSION }}-universal-11.0
+      - name: sdl
+        if: steps.sdl-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o sdl.tar.gz "https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL2-$SDL_VERSION.tar.gz"
+          echo "8b8d4aef2038533da814965220f88f77d60dfa0f32685f80ead65e501337da7f  sdl.tar.gz" | shasum -a 256 -c
+          tar xzf sdl.tar.gz
+          cmake -S "SDL2-$SDL_VERSION" -B build/sdlbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST=OFF -DCMAKE_INSTALL_PREFIX="$PWD/build/sdl"
+          cmake --build build/sdlbuild -j 4
+          cmake --install build/sdlbuild
+      - name: build
+        run: |
+          mkdir -p build/gen
+          python -I tools/asm.py asm/sf2.s build/sf2.sfc build/ir.json
+          python -I tools/recomp.py build/ir.json build/gen
+          ./build_mac.sh
+      - name: smoke test
+        timeout-minutes: 10
+        run: |
+          app="build/Project Arwing.app"
+          bin="$app/Contents/MacOS/arwing"
+          "$bin" --version
+          lipo -archs "$bin" | grep -q arm64
+          lipo -archs "$bin" | grep -q x86_64
+          codesign --verify --deep --strict "$app"
+          plutil -lint "$app/Contents/Info.plist"
+          test -s "$app/Contents/Resources/arwing.icns"
+          perl -e 'alarm 120; exec @ARGV' "$bin" --frames 120 --hashlog build/rc.txt build/sf2.sfc
+          perl -e 'alarm 120; exec @ARGV' "$bin" --frames 120 --hashlog build/interp.txt --interp build/sf2.sfc
+          cmp build/rc.txt build/interp.txt
+          hdiutil verify build/arwing-macos.dmg
+      - name: ui smoke test
+        timeout-minutes: 10
+        run: |
+          python3 -c "import struct;c=[0xf83030,0x30f830,0x3030f8,0xf8f830,0xf830f8,0x30f8f8,0xf8f8f8,0x101010];row=lambda w:b''.join(struct.pack('<I',0xff000000|c[x*8//w]) for x in range(w));f=open('preview_cache.bin','wb');f.write(struct.pack('<I',0x31565053));[f.write(row(256)*224+bytes(256*224)+row(1024)*896+bytes(48000*16)) for s in range(2)]"
+          perl -e 'alarm 90; exec @ARGV' "build/Project Arwing.app/Contents/MacOS/arwing" --uitest build/ut build/sf2.sfc || true
+          rm -f preview_cache.bin
+          for f in build/ut_*.bmp; do sips -s format png "$f" --out "${f%.bmp}.png" >/dev/null; done
+          ls build/ut_*.png
+          test -f build/ut_08_controls.png
+      - name: wizard launch test
+        timeout-minutes: 5
+        run: |
+          "build/Project Arwing.app/Contents/MacOS/arwing" & p=$!
+          sleep 10; screencapture -x build/ut_install.png || true
+          kill $p
+          ditto "build/Project Arwing.app" "/Applications/Project Arwing.app"
+          "/Applications/Project Arwing.app/Contents/MacOS/arwing" & p=$!
+          sleep 10; screencapture -x build/ut_romwiz.png || true
+          kill $p
+          rm -rf "/Applications/Project Arwing.app" "$HOME/Library/Application Support/Project Arwing"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uitest-macos
+          path: build/ut_*.png
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arwing-macos
+          path: build/arwing-macos.dmg
+
+  release:
+    needs: [windows, macos]
+    if: always() && github.ref == 'refs/heads/main' && needs.windows.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
       - name: release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git tag -f 1.0
           git push -f origin refs/tags/1.0
           gh release view 1.0 >/dev/null 2>&1 || gh release create 1.0 --title "1.0" --notes "Run arwing.exe to install. You need your own Star Fox 2 ROM (SNES Classic / Mini release)."
-          gh release upload 1.0 build/arwing.exe --clobber
+          gh release upload 1.0 dist/arwing.exe --clobber
+          if [ -f dist/arwing-macos.dmg ]; then
+            gh release upload 1.0 dist/arwing-macos.dmg --clobber
+            gh release edit 1.0 --notes "Windows: run arwing.exe to install. Mac: open arwing-macos.dmg and run Project Arwing to install. It isn't notarized, so the first time right-click it and pick Open (macOS 15: System Settings > Privacy & Security > Open Anyway). You need your own Star Fox 2 ROM (SNES Classic / Mini release)."
+          fi

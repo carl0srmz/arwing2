@@ -1,6 +1,11 @@
 #include "gfx.h"
 #include <string.h>
 
+int gfx_key, gfx_mx = -1, gfx_my = -1;
+bool gfx_click, gfx_moved;
+static int focus, nwid, nwid_prev;
+
+#ifdef _WIN32
 HDC mdc; uint32_t *canvas; int cw, ch;
 HFONT f_title, f_item, f_small, f_tab;
 static HBITMAP dib;
@@ -27,11 +32,13 @@ void fill(int x, int y, int w, int h, COLORREF c) { RECT r = { x, y, x + w, y + 
 void text(int x, int y, HFONT f, COLORREF c, const char *s) { SelectObject(mdc, f); SetTextColor(mdc, c); TextOutA(mdc, x, y, s, (int)strlen(s)); }
 void textw(int x, int y, HFONT f, COLORREF c, const wchar_t *s) { SelectObject(mdc, f); SetTextColor(mdc, c); TextOutW(mdc, x, y, s, (int)wcslen(s)); }
 int text_w(HFONT f, const char *s) { SIZE sz; SelectObject(mdc, f); GetTextExtentPoint32A(mdc, s, (int)strlen(s), &sz); return sz.cx; }
-void text_r(int xr, int y, HFONT f, COLORREF c, const char *s) { text(xr - text_w(f, s), y, f, c, s); }
 void text_wrap(Rect r, HFONT f, COLORREF c, const char *s) {
   SelectObject(mdc, f); SetTextColor(mdc, c); RECT rc = { r.x, r.y, r.x + r.w, r.y + r.h };
   DrawTextA(mdc, s, -1, &rc, DT_WORDBREAK | DT_NOPREFIX);
 }
+#endif
+
+void text_r(int xr, int y, HFONT f, COLORREF c, const char *s) { text(xr - text_w(f, s), y, f, c, s); }
 
 void panel(int x, int y, int w, int h, COLORREF bg, COLORREF edge) {
   fill(x + 1, y, w - 2, h, edge); fill(x, y + 1, w, h - 2, edge);
@@ -62,15 +69,32 @@ void logo(int x, int y) {
   text(x, y, f_title, RGB(248, 216, 64), "STAR FOX 2");
 }
 
-HWND gfx_hwnd; int gfx_key;
-static int mx = -1, my = -1, gpx = 2, focus, nwid, nwid_prev;
-static bool click, moved, closed;
+void gfx_begin(void) { focus = 0; nwid_prev = 0; }
+
+int gfx_frame(int (*step)(void), bool shift) {
+  if (nwid_prev) {
+    if (gfx_key == VK_DOWN || gfx_key == VK_RIGHT || (gfx_key == VK_TAB && !shift)) focus = (focus + 1) % nwid_prev;
+    if (gfx_key == VK_UP || gfx_key == VK_LEFT || (gfx_key == VK_TAB && shift)) focus = (focus + nwid_prev - 1) % nwid_prev;
+  }
+  nwid = 0;
+  fill(0, 0, cw, ch, C_SPACE); stars();
+  int prev = nwid_prev;
+  int res = step();
+  if (nwid != prev) focus = 0;
+  nwid_prev = nwid; gfx_click = gfx_moved = false; gfx_key = 0;
+  return res;
+}
+
+#ifdef _WIN32
+HWND gfx_hwnd;
+static int gpx = 2;
+static bool closed;
 
 static LRESULT CALLBACK gwndproc(HWND h, UINT m, WPARAM wp, LPARAM lp) {
   switch (m) {
   case WM_CLOSE: closed = true; return 0;
-  case WM_MOUSEMOVE: mx = (short)LOWORD(lp) / gpx; my = (short)HIWORD(lp) / gpx; moved = true; return 0;
-  case WM_LBUTTONDOWN: click = true; return 0;
+  case WM_MOUSEMOVE: gfx_mx = (short)LOWORD(lp) / gpx; gfx_my = (short)HIWORD(lp) / gpx; gfx_moved = true; return 0;
+  case WM_LBUTTONDOWN: gfx_click = true; return 0;
   case WM_KEYDOWN: gfx_key = (int)wp; return 0;
   }
   return DefWindowProcW(h, m, wp, lp);
@@ -90,22 +114,12 @@ int gfx_window(const wchar_t *title, int w, int h, int (*step)(void)) {
   gfx_hwnd = CreateWindowW(L"arwing_gfx", title, st, (sw - ww) / 2, (sh - wh) / 2, ww, wh, NULL, NULL, hi, NULL);
   gfx_canvas(w, h);
   ShowWindow(gfx_hwnd, SW_SHOW); SetForegroundWindow(gfx_hwnd);
-  closed = false; focus = 0; nwid_prev = 0;
+  closed = false; gfx_begin();
   int res = 0;
   while (!res) {
     MSG msg; while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) { TranslateMessage(&msg); DispatchMessageW(&msg); }
     if (closed) { res = -1; break; }
-    if (nwid_prev) {
-      bool sh_ = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
-      if (gfx_key == VK_DOWN || gfx_key == VK_RIGHT || (gfx_key == VK_TAB && !sh_)) focus = (focus + 1) % nwid_prev;
-      if (gfx_key == VK_UP || gfx_key == VK_LEFT || (gfx_key == VK_TAB && sh_)) focus = (focus + nwid_prev - 1) % nwid_prev;
-    }
-    nwid = 0;
-    fill(0, 0, w, h, C_SPACE); stars();
-    int prev = nwid_prev;
-    res = step();
-    if (nwid != prev) focus = 0;
-    nwid_prev = nwid; click = moved = false; gfx_key = 0;
+    res = gfx_frame(step, (GetKeyState(VK_SHIFT) & 0x8000) != 0);
     GdiFlush();
     HDC dc = GetDC(gfx_hwnd);
     SetStretchBltMode(dc, COLORONCOLOR);
@@ -116,13 +130,14 @@ int gfx_window(const wchar_t *title, int w, int h, int (*step)(void)) {
   DestroyWindow(gfx_hwnd); gfx_hwnd = NULL;
   return res;
 }
+#endif
 
 static bool widget(int x, int y, int w, int h, bool *f) {
   int id = nwid++;
-  bool hov = mx >= x && mx < x + w && my >= y && my < y + h;
-  if (hov && moved) focus = id;
+  bool hov = gfx_mx >= x && gfx_mx < x + w && gfx_my >= y && gfx_my < y + h;
+  if (hov && gfx_moved) focus = id;
   *f = focus == id;
-  return (click && hov) || (*f && (gfx_key == VK_RETURN || gfx_key == VK_SPACE));
+  return (gfx_click && hov) || (*f && (gfx_key == VK_RETURN || gfx_key == VK_SPACE));
 }
 
 bool gfx_button(int x, int y, int w, const char *label) {

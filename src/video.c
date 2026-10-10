@@ -1,6 +1,7 @@
 #include "app.h"
-#include <GL/gl.h>
 #include <math.h>
+#ifdef _WIN32
+#include <GL/gl.h>
 #pragma comment(lib, "opengl32.lib")
 
 typedef char GLchar;
@@ -32,8 +33,11 @@ F(void, glGenerateMipmap, (GLenum))
 typedef BOOL (WINAPI *PFN_wglSwapIntervalEXT)(int);
 static PFN_wglSwapIntervalEXT wglSwapIntervalEXT_;
 #undef F
-
 static HDC dc; static HGLRC glrc;
+#else
+#include <OpenGL/gl.h>
+#endif
+
 static int win_w = 1, win_h = 1;
 static GLuint tex_game, tex_ui, prog_sharp, prog_crt, prog_ambient;
 static int game_w = 256, game_h = 224;
@@ -112,6 +116,16 @@ static GLuint compile(const char *fs) {
   return ok ? p : 0;
 }
 
+static void video_setup(void) {
+  if (have_shaders) {
+    prog_sharp = compile(FS_SHARP); prog_crt = compile(FS_CRT); prog_ambient = compile(FS_AMBIENT);
+    have_shaders = prog_sharp && prog_crt;
+  }
+  glGenTextures(1, &tex_game); glGenTextures(1, &tex_ui);
+  glEnable(GL_TEXTURE_2D);
+}
+
+#ifdef _WIN32
 bool video_init(HWND w) {
   dc = GetDC(w);
   PIXELFORMATDESCRIPTOR pfd = { sizeof pfd, 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32 };
@@ -127,21 +141,21 @@ bool video_init(HWND w) {
 #undef L
   wglSwapIntervalEXT_ = (PFN_wglSwapIntervalEXT)wglGetProcAddress("wglSwapIntervalEXT");
   have_shaders = glCreateShader && glUseProgram;
-  if (have_shaders) {
-    prog_sharp = compile(FS_SHARP); prog_crt = compile(FS_CRT); prog_ambient = compile(FS_AMBIENT);
-    have_shaders = prog_sharp && prog_crt;
-  }
-  glGenTextures(1, &tex_game); glGenTextures(1, &tex_ui);
-  glEnable(GL_TEXTURE_2D);
+  video_setup();
   return true;
 }
+void plat_vsync(int on) { if (wglSwapIntervalEXT_) wglSwapIntervalEXT_(on); }
+void video_present(void) { SwapBuffers(dc); }
+#else
+bool video_init(void) { have_shaders = true; video_setup(); return true; }
+#endif
 
 void video_resize(int w, int h) { win_w = w > 0 ? w : 1; win_h = h > 0 ? h : 1; }
 int video_width(void) { return win_w; }
 int video_height(void) { return win_h; }
 
 void video_clear(float r, float g, float b) {
-  if (cur_vsync != cfg.vsync && wglSwapIntervalEXT_) { wglSwapIntervalEXT_(cfg.vsync ? 1 : 0); cur_vsync = cfg.vsync; }
+  if (cur_vsync != cfg.vsync) { plat_vsync(cfg.vsync ? 1 : 0); cur_vsync = cfg.vsync; }
   glViewport(0, 0, win_w, win_h);
   glClearColor(r, g, b, 1); glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -231,8 +245,6 @@ void video_draw_rgba(const u32 *pix, int w, int h, Rect r, bool blend) {
   quad(r.x, r.y, r.w, r.h, 0, 0, 1, 1);
   if (blend) glDisable(GL_BLEND);
 }
-
-void video_present(void) { SwapBuffers(dc); }
 
 void video_read(u32 *dst) {
   glReadBuffer(GL_BACK);

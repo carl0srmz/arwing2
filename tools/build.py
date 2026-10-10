@@ -26,9 +26,11 @@ def main():
     run(*PY, 'tools/recomp.py', 'build/ir.json', 'build/gen')
     if os.name == 'nt':
         run('cmd', '/c', os.path.join(ROOT, 'build.bat'))
+    elif sys.platform == 'darwin':
+        run('sh', 'build_mac.sh')
     else:
-        sys.exit('only the MSVC build (build.bat) is set up so far')
-    print('done: build/sf2.exe  (run it from the repository root; it loads build/sf2.sfc for game data)')
+        sys.exit('only the Windows and macOS builds are set up so far')
+    print(f"done: {'build/sf2.exe' if os.name == 'nt' else 'build/arwing'}  (run it from the repository root; it loads build/sf2.sfc for game data)")
 
 if __name__ == '__main__':
     main()

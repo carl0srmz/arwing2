@@ -1,30 +1,16 @@
 #include "app.h"
-#include <mmsystem.h>
-#pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "user32.lib")
+#include <time.h>
 
 bool app_quit;
 const char *uitest_prefix;
 void ui_debug_set(int s, int p);
 void video_read(u32 *dst);
-static HWND hwnd;
-static RECT windowed_rect; static bool is_fullscreen;
-void ui_mouse(int x, int y, bool down, int wheel_delta);
+static bool is_fullscreen, snd;
 void save_sram(void);
 
-#define ABUF_FRAMES 1024
-#define NABUF 8
-static HWAVEOUT wo; static WAVEHDR wh[NABUF]; static s16 abuf[NABUF][ABUF_FRAMES * 2];
 static s16 ring[16384 * 2]; static int ring_n;
 static const s16 *clip; static int clip_len, clip_pos;
 
-static void audio_init(void) {
-  WAVEFORMATEX fmt = { WAVE_FORMAT_PCM, 2, 48000, 48000 * 4, 4, 16, 0 };
-  if (waveOutOpen(&wo, WAVE_MAPPER, &fmt, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR) { wo = 0; return; }
-  for (int i = 0; i < NABUF; i++) { wh[i].lpData = (LPSTR)abuf[i]; wh[i].dwBufferLength = ABUF_FRAMES * 4; wh[i].dwFlags = WHDR_DONE; }
-}
-static int audio_busy_buffers(void) { int n = 0; for (int i = 0; i < NABUF; i++) if (!(wh[i].dwFlags & WHDR_DONE)) n++; return n; }
 static void audio_ring_add(const s16 *s, int n) {
   int room = 16384 - ring_n; if (n > room) n = room;
   int vol = cfg.volume * 256 / 100;
@@ -32,18 +18,12 @@ static void audio_ring_add(const s16 *s, int n) {
   ring_n += n;
 }
 static void audio_submit(void) {
-  if (!wo) { ring_n = 0; return; }
-  for (int i = 0; i < NABUF && ring_n >= ABUF_FRAMES; i++) {
-    WAVEHDR *h = &wh[i];
-    if (!(h->dwFlags & WHDR_DONE)) continue;
-    if (h->dwFlags & WHDR_PREPARED) waveOutUnprepareHeader(wo, h, sizeof *h);
-    memcpy(abuf[i], ring, ABUF_FRAMES * 4);
+  if (!snd) { ring_n = 0; return; }
+  while (ring_n >= ABUF_FRAMES && snd_put(ring, ABUF_FRAMES)) {
     memmove(ring, ring + ABUF_FRAMES * 2, (ring_n - ABUF_FRAMES) * 4); ring_n -= ABUF_FRAMES;
-    h->dwFlags = 0; h->dwBufferLength = ABUF_FRAMES * 4;
-    waveOutPrepareHeader(wo, h, sizeof *h); waveOutWrite(wo, h, sizeof *h);
   }
 }
-static int audio_queued(void) { return audio_busy_buffers() * ABUF_FRAMES + ring_n; }
+static int audio_queued(void) { return snd_busy() + ring_n; }
 void audio_play_clip(const s16 *pcm, int frames) { clip = pcm; clip_len = frames; clip_pos = 0; }
 void audio_stop_clip(void) { clip = NULL; }
 static void audio_clip_pump(void) {
@@ -128,7 +108,7 @@ static void pv_save_cache(void) {
   }
   fclose(f);
 }
-static DWORD WINAPI pv_thread(LPVOID arg) {
+static int pv_thread(void *arg) {
   (void)arg;
   apu_dual = true;
   static s16 tmp[8192];
@@ -156,37 +136,13 @@ static DWORD WINAPI pv_thread(LPVOID arg) {
 
 static void set_fullscreen(bool on) {
   if (on == is_fullscreen) return;
-  if (on) {
-    GetWindowRect(hwnd, &windowed_rect);
-    MONITORINFO mi = { sizeof mi }; GetMonitorInfoA(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi);
-    SetWindowLongA(hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-    SetWindowPos(hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left,
-                 mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_FRAMECHANGED);
-  } else {
-    SetWindowLongA(hwnd, GWL_STYLE, WS_OVERLAPPEDWINDOW | WS_VISIBLE);
-    SetWindowPos(hwnd, NULL, windowed_rect.left, windowed_rect.top, windowed_rect.right - windowed_rect.left,
-                 windowed_rect.bottom - windowed_rect.top, SWP_FRAMECHANGED | SWP_NOZORDER);
-  }
+  plat_fullscreen(on);
   is_fullscreen = on; cfg.fullscreen = on;
 }
-
-static LRESULT CALLBACK wndproc(HWND w, UINT m, WPARAM wp, LPARAM lp) {
-  input_wndproc(w, m, wp, lp);
-  switch (m) {
-  case WM_CLOSE: app_quit = true; return 0;
-  case WM_SIZE: video_resize(LOWORD(lp), HIWORD(lp)); return 0;
-  case WM_MOUSEMOVE: ui_mouse((short)LOWORD(lp), (short)HIWORD(lp), (wp & MK_LBUTTON) != 0, 0); return 0;
-  case WM_LBUTTONDOWN: case WM_LBUTTONUP: ui_mouse((short)LOWORD(lp), (short)HIWORD(lp), m == WM_LBUTTONDOWN, 0); return 0;
-  case WM_MOUSEWHEEL: ui_mouse(-1, -1, false, (short)HIWORD(wp) > 0 ? 1 : -1); return 0;
-  case WM_SYSKEYDOWN: if (wp == VK_RETURN) { set_fullscreen(!is_fullscreen); return 0; } break;
-  case WM_SYSCHAR: return 0;
-  case WM_ERASEBKGND: return 1;
-  }
-  return DefWindowProcA(w, m, wp, lp);
-}
+void app_toggle_fullscreen(void) { set_fullscreen(!is_fullscreen); }
 
 static int slot;
-static void state_path(char *p, int n) { CreateDirectoryA("saves", NULL); snprintf(p, n, "saves/slot%d.state", slot); }
+static void state_path(char *p, int n) { plat_mkdir("saves"); snprintf(p, n, "saves/slot%d.state", slot); }
 static void save_state(void) {
   Ser s = { 0 }; snes_serialize(&s);
   char p[64]; state_path(p, sizeof p);
@@ -244,10 +200,10 @@ static void ut_game(void) {
   case 10: cfg.aspect = ASPECT_16_9_AMBIENT; strcpy(ut_name, "11_game_ambient"); break;
   case 11: cfg.aspect = ASPECT_4_3; cfg.hd3d = 1; hd_scale = 0; hd_reset(); strcpy(ut_name, "12_game_smooth_1x"); break;
   case 12: {
-    static DWORD t0; static int f0;
+    static u32 t0; static int f0;
     if (!t0) { t0 = GetTickCount(); f0 = ut_game_frames; }
     else if (GetTickCount() - t0 >= 3000) {
-      printf("uitest: %.2f emulated frames/s with audio pacing (audio device %s)\n", (ut_game_frames - f0) * 1000.0 / (GetTickCount() - t0), wo ? "open" : "missing");
+      printf("uitest: %.2f emulated frames/s with audio pacing (audio device %s)\n", (ut_game_frames - f0) * 1000.0 / (GetTickCount() - t0), snd ? "open" : "missing");
       fflush(stdout); ut_step++;
     }
     break;
@@ -257,9 +213,9 @@ static void ut_game(void) {
 }
 
 static void screenshot(const u32 *pix, int w, int h) {
-  CreateDirectoryA("screenshots", NULL);
-  SYSTEMTIME t; GetLocalTime(&t);
-  char p[128]; snprintf(p, sizeof p, "screenshots/sf2_%04d%02d%02d_%02d%02d%02d.bmp", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+  plat_mkdir("screenshots");
+  time_t now = time(NULL); struct tm t = *localtime(&now);
+  char p[128]; snprintf(p, sizeof p, "screenshots/sf2_%04d%02d%02d_%02d%02d%02d.bmp", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
   FILE *f = fopen(p, "wb"); if (!f) return;
   u8 hd[54] = { 'B', 'M' };
   *(u32 *)(hd + 2) = 54 + w * h * 4; *(u32 *)(hd + 10) = 54; *(u32 *)(hd + 14) = 40;
@@ -270,39 +226,29 @@ static void screenshot(const u32 *pix, int w, int h) {
 
 int app_run(void) {
   cfg_load("sf2.ini");
-  HINSTANCE hi = GetModuleHandleA(NULL);
-  WNDCLASSA wc = { 0 }; wc.lpfnWndProc = wndproc; wc.hInstance = hi; wc.lpszClassName = "sf2"; wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-  wc.hIcon = LoadIconA(hi, MAKEINTRESOURCEA(1)); if (!wc.hIcon) wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-  RegisterClassA(&wc);
-  RECT r = { 0, 0, 1280, 800 }; AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
-  hwnd = CreateWindowA("sf2", "Star Fox 2", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
-                       r.right - r.left, r.bottom - r.top, 0, 0, hi, 0);
-  if (!video_init(hwnd)) { MessageBoxA(hwnd, "OpenGL initialisation failed.", "Star Fox 2", MB_ICONERROR); return 1; }
-  RECT cr; GetClientRect(hwnd, &cr); video_resize(cr.right, cr.bottom);
+  if (!plat_open()) { plat_error("OpenGL initialisation failed."); return 1; }
   if (cfg.fullscreen) { cfg.fullscreen = 0; set_fullscreen(true); }
-  input_init(hwnd);
-  audio_init();
-  timeBeginPeriod(1);
+  snd = snd_open();
   ui_init();
 
   hd_scale = 4; hd_reset();
   Ser power = { 0 }; snes_serialize(&power);
   pv_alloc();
-  HANDLE th = NULL;
+  void *th = NULL;
   if (pv_load_cache()) preview_ready = 1;
-  else th = CreateThread(NULL, 0, pv_thread, NULL, 0, NULL);
+  else th = plat_thread(pv_thread);
 
   enum { M_MENU, M_GAME } mode = M_MENU;
   bool in_game = false, paused = false;
   bool k_save = 0, k_load = 0, k_menu = 0, k_slot = 0, k_pause = 0, k_shot = 0, k_fs = 0;
-  LARGE_INTEGER freq, t0, now; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&t0);
-  double fps = 0; int fps_frames = 0; LARGE_INTEGER fps_t = t0;
+  double t0 = plat_time(), now;
+  double fps = 0; int fps_frames = 0; double fps_t = t0;
   double frame_time = 357368.0 / 21477272.0; double next_frame = 0;
   const u32 *shown = framebuf; int shown_w = 256, shown_h = 224;
   bool ui_was_ready = false;
 
   while (!app_quit) {
-    MSG msg; while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE)) { TranslateMessage(&msg); DispatchMessageA(&msg); }
+    plat_events();
     input_poll();
     if (!ui_was_ready && preview_ready) {
       const u32 *a[2] = { pv1x[0], pv1x[1] }; const u32 *b[2] = { pvhd[0][4], pvhd[1][4] }; const s16 *c[2] = { pvclip[0], pvclip[1] };
@@ -321,7 +267,7 @@ int app_run(void) {
       if (res == UI_QUIT) app_quit = true;
       if (res == UI_START_GAME || res == UI_RESUME || res == UI_RESET) {
         if (!in_game || res == UI_RESET) {
-          if (th) { WaitForSingleObject(th, INFINITE); CloseHandle(th); th = NULL; }
+          if (th) { plat_join(th); th = NULL; }
           static u8 keep[0x10000]; if (in_game) memcpy(keep, gsu_ram, sizeof keep);
           power.load = true; power.pos = 0; snes_serialize(&power);
           if (in_game) memcpy(gsu_ram, keep, sizeof keep);
@@ -333,7 +279,7 @@ int app_run(void) {
         audio_stop_clip();
         mode = M_GAME; paused = false; input_flush_edges();
         k_menu = true;
-        QueryPerformanceCounter(&t0); next_frame = 0;
+        t0 = plat_time(); next_frame = 0;
       }
       continue;
     }
@@ -353,15 +299,14 @@ int app_run(void) {
       if (ff) {
         for (int i = 0; i < (uitest_prefix ? 25 : cfg.ff_speed); i++) { snes_run_frame(); frames++; }
         s16 junk[8192]; while (apu_take_samples(junk, 4096) > 0) {}
-        QueryPerformanceCounter(&t0); next_frame = 0;
-      } else if (wo) {
+        t0 = plat_time(); next_frame = 0;
+      } else if (snd) {
         while (audio_queued() < ABUF_FRAMES * 3 && frames < 4) {
           snes_run_frame(); frames++;
           s16 tmp[8192]; int n = apu_take_samples(tmp, 4096); audio_ring_add(tmp, n); audio_submit();
         }
       } else {
-        QueryPerformanceCounter(&now);
-        double el = (double)(now.QuadPart - t0.QuadPart) / freq.QuadPart;
+        double el = plat_time() - t0;
         while (next_frame <= el && frames < 4) { snes_run_frame(); frames++; next_frame += frame_time; }
         if (el - next_frame > 0.25) next_frame = el;
         s16 junk[8192]; while (apu_take_samples(junk, 4096) > 0) {}
@@ -374,8 +319,8 @@ int app_run(void) {
     }
     b = input_key(VK_F12); if (b && !k_shot) screenshot(shown, shown_w, shown_h); k_shot = b;
     fps_frames += frames;
-    QueryPerformanceCounter(&now);
-    double dt = (double)(now.QuadPart - fps_t.QuadPart) / freq.QuadPart;
+    now = plat_time();
+    double dt = now - fps_t;
     if (dt >= 0.5) { fps = fps_frames / dt; fps_frames = 0; fps_t = now; }
     video_clear(0, 0, 0);
     video_draw_game(&cfg, (Rect){ 0, 0, video_width(), video_height() }, 0, 0, 1, 1);
@@ -384,7 +329,7 @@ int app_run(void) {
     video_present();
     if (!frames && !cfg.vsync) Sleep(1);
   }
-  if (th) { WaitForSingleObject(th, INFINITE); CloseHandle(th); }
+  if (th) plat_join(th);
   cfg_save("sf2.ini");
   if (in_game && !uitest_prefix) save_sram();
   return 0;

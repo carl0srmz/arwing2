@@ -1,6 +1,4 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include "snes.h"
 #include "gfx.h"
 
@@ -28,9 +26,15 @@ void cfg_defaults_bindings(Settings *s);
 enum { PB_SOUTH, PB_EAST, PB_WEST, PB_NORTH, PB_L1, PB_R1, PB_L2, PB_R2, PB_SELECT, PB_START, PB_L3, PB_R3, PB_HOME,
        PB_DUP, PB_DDOWN, PB_DLEFT, PB_DRIGHT, PB_LS_UP, PB_LS_DOWN, PB_LS_LEFT, PB_LS_RIGHT, PB_COUNT };
 extern const char *pad_button_names[PB_COUNT];
+#ifdef _WIN32
 void input_init(HWND w);
-void input_poll(void);
 bool input_wndproc(HWND w, UINT m, WPARAM wp, LPARAM lp);
+bool video_init(HWND w);
+#else
+void input_init(void);
+bool video_init(void);
+#endif
+void input_poll(void);
 bool input_key(int vk);
 u32 input_pad_buttons(void);
 int input_pad_count(void);
@@ -42,7 +46,6 @@ bool input_bind_down(int bind);
 u16 input_snes_mask(void);
 const char *key_name(int vk);
 
-bool video_init(HWND w);
 void video_resize(int w, int h);
 void video_clear(float r, float g, float b);
 void video_upload_game(const u32 *pix, int w, int h);
@@ -62,3 +65,18 @@ void osd_draw(double fps);
 void audio_play_clip(const s16 *pcm, int frames);
 void audio_stop_clip(void);
 extern bool app_quit;
+void app_toggle_fullscreen(void);
+
+#define ABUF_FRAMES 1024
+bool plat_open(void);
+void plat_events(void);
+void plat_fullscreen(bool on);
+void plat_vsync(int on);
+void plat_error(const char *msg);
+void plat_mkdir(const char *path);
+double plat_time(void);
+void *plat_thread(int (*fn)(void *));
+void plat_join(void *t);
+bool snd_open(void);
+int snd_busy(void);
+bool snd_put(const s16 *pcm, int frames);
