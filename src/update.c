@@ -32,7 +32,7 @@ static void tmp_path(const char *name) { char d[MAX_PATH]; GetTempPathA(MAX_PATH
 #define ASSET "arwing-linux.AppImage"
 #endif
 static bool fetch(const char *url, const char *path) {
-  char c[2048]; snprintf(c, sizeof c, "curl -fsSL --max-time 300 -o '%s' '%s' >/dev/null 2>&1", path, url);
+  char c[2048]; snprintf(c, sizeof c, "curl -fsSL --connect-timeout 10 --max-time 300 -o '%s' '%s' </dev/null >/dev/null 2>&1", path, url);
   return system(c) == 0;
 }
 static void tmp_path(const char *name) {
@@ -61,7 +61,8 @@ static int download(void *arg) {
 }
 
 void update_start_check(void) {
-  if (strlen(build_id) == 40 && !state) { state = 1; plat_thread(check); }
+  extern const char *uitest_prefix;
+  if (strlen(build_id) == 40 && !state && !uitest_prefix) { state = 1; plat_thread(check); }
 }
 
 const char *update_label(void) {
