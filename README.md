@@ -1,3 +1,5 @@
+<p align="center"><img src="res/logo.png" width="256" alt="Project Arwing"></p>
+
 # Star Fox 2 — disassembly and native PC port
 
 An open reverse-engineering project for **Star Fox 2** (SNES, SuperFX GSU-2). It contains:
