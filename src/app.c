@@ -301,10 +301,14 @@ int app_run(void) {
         s16 junk[8192]; while (apu_take_samples(junk, 4096) > 0) {}
         t0 = plat_time(); next_frame = 0;
       } else if (snd) {
-        while (audio_queued() < ABUF_FRAMES * 3 && frames < 4) {
-          snes_run_frame(); frames++;
+        double el = plat_time() - t0, q = audio_queued(), target = ABUF_FRAMES * 3;
+        double adj = 1 + (q - target) / target * 0.005;
+        if (adj < 0.995) adj = 0.995; if (adj > 1.005) adj = 1.005;
+        while ((next_frame <= el || audio_queued() < ABUF_FRAMES) && frames < 4) {
+          snes_run_frame(); frames++; next_frame += frame_time * adj;
           s16 tmp[8192]; int n = apu_take_samples(tmp, 4096); audio_ring_add(tmp, n); audio_submit();
         }
+        if (el - next_frame > 0.25 || next_frame - el > 0.25) next_frame = el;
       } else {
         double el = plat_time() - t0;
         while (next_frame <= el && frames < 4) { snes_run_frame(); frames++; next_frame += frame_time; }

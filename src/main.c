@@ -98,7 +98,7 @@ void plat_error(const char *msg);
 
 int main(int argc, char **argv) {
   const char *rom_path = "build/sf2.sfc", *shot_prefix = "shot", *cov_prefix = NULL;
-  const char *gsuprof_path = NULL, *state_file = NULL;
+  const char *gsuprof_path = NULL, *state_file = NULL, *save_file = NULL; int save_frame = -1;
   FILE *hashlog = NULL, *wav = NULL; u32 wav_frames = 0; int wramdump_frame = -1;
   int frames = -1; int shots[256]; int nshots = 0;
   for (int i = 1; i < argc; i++) {
@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "--wramdump") && i + 1 < argc) wramdump_frame = atoi(argv[++i]);
     else if (!strcmp(argv[i], "--hashlog") && i + 1 < argc) hashlog = fopen(argv[++i], "w");
     else if (!strcmp(argv[i], "--state") && i + 1 < argc) state_file = argv[++i];
+    else if (!strcmp(argv[i], "--savestate") && i + 2 < argc) { save_frame = atoi(argv[++i]); save_file = argv[++i]; }
     else rom_path = argv[i];
   }
   if (argc == 1 || (argc == 2 && !strncmp(argv[1], "-psn", 4))) {
@@ -153,6 +154,7 @@ int main(int argc, char **argv) {
       snes_set_pad(0, script_pad(f));
       snes_run_frame();
       if (wav) { static s16 sb[4096 * 2]; int n = apu_take_samples(sb, 4096); fwrite(sb, 4, n, wav); wav_frames += n; }
+      if (f == save_frame) { Ser st = { 0 }; snes_serialize(&st); FILE *wf = fopen(save_file, "wb"); if (wf) { fwrite(st.buf, 1, st.pos, wf); fclose(wf); } free(st.buf); }
       if (f == wramdump_frame) { FILE *wf = fopen("out/wramdump.bin", "wb"); fwrite(wram, 1, sizeof wram, wf); fclose(wf); }
       if (hashlog) { u32 h = 0; for (int i = 0; i < 0x20000; i++) h = h * 31 + wram[i]; fprintf(hashlog, "%d %llu %08x %02x:%04x\n", f, master_clock, h, cpu.pb, cpu.pc); }
       for (int k = 0; k < nshots; k++) if (shots[k] == f) { char p[512]; sprintf(p, "%s_%05d.bmp", shot_prefix, f); write_bmp(p); }
