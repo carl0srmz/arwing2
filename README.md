@@ -1,141 +1,207 @@
-<p align="center"><img src="res/logo.png" width="256" alt="Project Arwing"></p>
+<p align="center"><img src="res/logo.png" width="200" alt="Project Arwing"></p>
 
-# Star Fox 2 — disassembly and native PC port
+<h1 align="center">Project Arwing</h1>
 
-An open reverse-engineering project for **Star Fox 2** (SNES, SuperFX GSU-2). It contains:
+<p align="center">
+A matching disassembly of <b>Star Fox 2</b> (SNES, SuperFX GSU-2) and a native PC port built from it.<br>
+Windows, macOS and Linux.
+</p>
 
-* **A matching disassembly** (`asm/`) of all 32 ROM banks: 65816 CPU code, SuperFX (GSU) code and data.
-  `tools/asm.py` reassembles it into a ROM that is byte-identical to the original
-  (SHA-1 `1135a2a6cb786ac7523e81dd553dc81aaa266f51`).
-* **A static recompiler** (`tools/recomp.py`) that turns the assembled 65816 and SuperFX
-  code into C. The C is compiled into a native Windows executable together with a small
-  hardware runtime (`src/`).
-* **The native runtime**, written from scratch: 65816 interpreter (used as a fallback),
-  PPU renderer, SPC700 + S-DSP audio, SuperFX coprocessor, DMA/HDMA, and a Win32 front end.
+<p align="center">
+<a href="https://github.com/carlosrmz009/project-arwing/actions/workflows/build.yml"><img src="https://github.com/carlosrmz009/project-arwing/actions/workflows/build.yml/badge.svg" alt="build"></a>
+<a href="https://github.com/carlosrmz009/project-arwing/releases/latest"><img src="https://img.shields.io/github/v/release/carlosrmz009/project-arwing?label=download" alt="download"></a>
+</p>
 
-No Nintendo data is distributed here. You need your own copy of the game. Large binary
-blobs (graphics, models, music) are extracted from your ROM at build time into `data/`.
+---
 
-## Building (Windows)
+* **Disassembly.** All 32 ROM banks in `asm/`: 65816 code, SuperFX code and data. It reassembles into a byte-identical ROM.
+* **Static recompiler.** `tools/recomp.py` turns every 65816 and SuperFX instruction into C. No emulator loop for the bulk of the game.
+* **Runtime.** PPU, SPC700 + S-DSP, SuperFX, DMA/HDMA and a 65816 interpreter fallback, written from scratch, plus a launcher with HD 3D, CRT filters and pad support.
 
-Requirements: Python 3.10+ (with NumPy for the disassembler only), Visual Studio 2022 Build
-Tools (MSVC x64).
+> [!IMPORTANT]
+> No game data is included. You need your own Star Fox 2 ROM from the **SNES Classic / Mini** release
+> (SHA-1 `1135a2a6cb786ac7523e81dd553dc81aaa266f51`). The 1995 prototypes won't work.
 
-```bash
-python tools/build.py path/to/starfox2.sfc
-```
+## Play
 
-This will:
-1. check the ROM's SHA-1 and extract `data/*.bin` (`tools/extract.py`),
-2. assemble `asm/sf2.s` into `build/sf2.sfc` and verify it matches the original,
-3. recompile all code into `build/gen/*.c` (`tools/recomp.py`),
-4. compile `build/sf2.exe` with MSVC (`build.bat`).
+Grab the file for your system from the [latest release](https://github.com/carlosrmz009/project-arwing/releases/latest):
 
-Run `build/sf2.exe` from the repo root. You get a settings menu with a live preview; Esc (or
-Home, or Select+Start) opens it again in game. Settings live in `sf2.ini`. First launch takes
-~10 s to grab preview frames from the intro (cached in `build/preview_cache.bin`).
+| System | File | |
+|---|---|---|
+| Windows (x64) | `arwing.exe` | Run it to install. |
+| macOS 11+ (Apple Silicon / Intel) | `arwing-macos.dmg` | Open it and run Project Arwing. Not notarized: the first time, right-click → Open (macOS 15: System Settings → Privacy & Security → Open Anyway). |
+| Linux x86_64 | `arwing-linux.AppImage` | `chmod +x` it and run it. |
+| Linux ARM64 | `arwing-linux-aarch64.AppImage` | Same. |
+
+The installer adds shortcuts, then asks for your ROM once. A 512-byte copier header is fine, it gets stripped.
+The launcher checks GitHub for a newer build and shows an update button when there is one.
+
+Settings, saves and the copied ROM live in:
+
+| | |
+|---|---|
+| Windows | `%APPDATA%\Project Arwing` |
+| macOS | `~/Library/Application Support/Project Arwing` |
+| Linux | `~/.local/share/project-arwing` |
+
+Uninstalling keeps that folder. Windows: *Settings → Apps*. macOS: run the dmg again and pick Uninstall. Linux: the app menu entry has an Uninstall action, or run the AppImage again.
 
 ### Extras
 
-| option | |
+The setup menu has a live preview. Esc, Home or Select+Start opens it in game.
+
+| Option | |
 |---|---|
-| HD 3D: off / 2x / 3x / 4x | Redraws the polygons at higher res. Sprites and textures stay 1x. Doesn't touch game state. |
-| Filter | Sharp, Smooth, Scale4x, or CRT (mask, scanlines, glow, curvature) |
-| Aspect | 4:3, 8:7, 16:9 fill (blurred sides), 16:9 stretch. No real widescreen: the game's 3D view is a fixed-width bitmap. |
+| HD 3D | Off / 2x / 3x / 4x. Redraws the polygons at higher res. Sprites and textures stay 1x. Doesn't touch game state. |
+| Filter | Sharp, Smooth, Scale4x, or CRT (grille/shadow/slot mask, scanlines, glow, curvature) |
+| Aspect | 4:3, 8:7, 16:9 fill (blurred sides), 16:9 stretch. No true widescreen: the 3D view is a fixed-width bitmap. |
 | Sound | Accurate (SNES filter) or Hi-res (no muffling, 48 kHz) |
 | Misc | Integer scaling, fullscreen, VSync, FPS counter, volume, fast-forward speed |
 
 ### Controls
 
-Remap keys and pads under *Controls* in the menu. Works with Xbox pads, DualShock 4 / DualSense,
-Switch Pro (Bluetooth only) and most generic USB pads. Plug in any time.
+Remap anything under *Controls*. Xbox pads, DualShock 4 / DualSense, Switch Pro (Bluetooth) and most USB pads work, hot-plugged.
 
-Default keys: arrows = D-pad, Z = B, X = A, A = Y, S = X, Q = L, W = R, Enter = Start,
-Right Shift = Select, Tab = fast-forward, F2 / F4 = save / load state, F3 = next state slot,
-P = pause, F11 or Alt+Enter = fullscreen, F12 = screenshot, Esc = menu.
-Battery saves go to `build/sf2.sfc.srm`, states to `saves/`, screenshots to `screenshots/`.
+| Key | SNES | | Key | Action |
+|---|---|---|---|---|
+| Arrows | D-pad | | Tab | Fast-forward (hold) |
+| Z / X | B / A | | F2 / F4 | Save / load state |
+| A / S | Y / X | | F3 | Next state slot |
+| Q / W | L / R | | P | Pause |
+| Enter | Start | | F11, Alt+Enter | Fullscreen |
+| Right Shift | Select | | F12 | Screenshot |
 
-### Command-line options
+## Build
 
-| option | |
+You still need the ROM: the big blobs (graphics, models, music) are extracted from it into `data/`.
+
+**Windows:** Python 3.10+, Visual Studio 2022 Build Tools (MSVC x64).
+**macOS:** Python 3, Xcode command line tools, SDL2.
+**Linux:** Python 3, gcc, SDL2, FreeType, DejaVu fonts. Packaging the AppImage also needs `appimagetool`.
+
+```bash
+python tools/build.py path/to/starfox2.sfc
+```
+
+That:
+
+1. checks the ROM hash and extracts `data/*.bin` (headerless ROM only),
+2. assembles `asm/sf2.s` into `build/sf2.sfc` and checks it matches the original,
+3. recompiles everything into `build/gen/*.c`,
+4. compiles `build/sf2.exe` (Windows) or `build/arwing` (macOS/Linux).
+
+Run the binary from the repo root. Settings go to `sf2.ini`, battery saves to `build/sf2.sfc.srm`, states to `saves/`,
+screenshots to `screenshots/`. The first launch spends ~10 s grabbing preview frames from the intro.
+
+CI ([build.yml](.github/workflows/build.yml)) builds all four targets without a ROM: missing `data/` blobs are zero-filled,
+which leaves the generated C unchanged. Every push to `main` refreshes the release.
+
+<details>
+<summary>Command-line options</summary>
+
+| Option | |
 |---|---|
 | `--frames N` | run headless for N frames, then print a state summary |
-| `--script FILE` | headless input: lines `frame hexmask` (mask held from that frame on) |
+| `--script FILE` | headless input: lines of `frame hexmask` (held from that frame on) |
 | `--shot a,b,c` / `--shotprefix P` | save BMP screenshots at those frames |
 | `--wav FILE` | record audio (headless) |
-| `--hd N` | headless HD 3D at N x (screenshots get an extra `_hd.bmp`) |
+| `--hd N` | headless HD 3D at N× (screenshots get an extra `_hd.bmp`) |
 | `--uitest PREFIX` | scripted walk through the launcher and game, saving the real OpenGL output |
-| `--interp` / `--interp-gsu` | disable the recompiled code (CPU+GSU / GSU only) |
-| `--hashlog FILE` | per-frame clock + WRAM hash (used to compare recompiled vs interpreted runs) |
-| `--cov PREFIX` | record code coverage (feeds the disassembler; forces the interpreter) |
+| `--interp` / `--interp-gsu` | turn off recompiled code (CPU+GSU / GSU only) |
+| `--hashlog FILE` | per-frame clock + WRAM hash, to compare recompiled vs interpreted runs |
+| `--cov PREFIX` | record code coverage for the disassembler (forces the interpreter) |
+| `--version` | print the version |
+
+</details>
+
+## How it works
+
+1. **Coverage.** The runtime can log every executed 65816 instruction (with its M/X widths), every SuperFX
+   instruction (with its ALT state), every indirect jump target, and where code in RAM was copied from. That
+   settles the hard parts of 65816 disassembly (variable-length immediates, jump tables) and finds RAM-resident code.
+2. **Disassembly.** `tools/disasm.py` claims what coverage proves is code, then extends it by recursive descent
+   (branches, calls, pointer tables). Code the game copies to WRAM (`$7F:0000`, `$7F:7E00`, `$00:0101`) is
+   assembled at its RAM address with `.base`. Everything else is data.
+3. **Matching build.** `tools/asm.py` rebuilds the ROM; `tools/build.py` checks the hash.
+4. **Recompilation.** Each basic block becomes a C function built from the same primitives the interpreter uses
+   (`cpu_ops.h`, `gsu_ops.h`), so recompiled and interpreted runs are cycle-for-cycle identical. Every instruction
+   is also an entry point, so execution can resume mid-block after an interrupt. Code in RAM only runs natively
+   while its bytes still match the ROM; self-modifying code and anything the disassembly missed fall back to the interpreter.
+
+## Status
+
+| | |
+|---|---|
+| Matching ROM | yes, byte-identical |
+| 65816 code | 66,520 instructions (~154 KB) |
+| SuperFX code | 23,186 instructions (~29 KB) |
+| Recompiled dispatches | 99.7 % CPU, 100 % SuperFX (20k frames of gameplay) |
+| Recomp vs interpreter | identical per-frame hashes over 20k frames |
+| Playable | intro, title, menus, map, missions |
+
+Known gaps:
+
+* Code discovery is coverage plus static analysis. Code never reached in the recorded sessions is still `.db`
+  (it runs fine through the interpreter).
+* Labels are auto-generated (`sub_`, `loc_`, `gsu_`, `tbl_`). The C is a mechanical translation, not hand-decompiled.
+* Audio has only been checked indirectly (levels, spectrogram), not against hardware.
+* HD 3D recovers sub-pixel positions for ~66–90 % of vertices (one of several projection routines is hooked).
+  The rest keep whole-pixel positions but still get clean edges.
+
+## Contributing
+
+Issues and PRs welcome. Useful things to work on:
+
+* **Naming.** Pick a routine, figure out what it does, give it a real name. Biggest gap right now.
+* **Coverage.** Play parts of the game that rarely come up and send the coverage files:
+  ```bash
+  build/sf2.exe --frames 40000 --script inputs.txt --cov out/cov1
+  python tools/disasm.py path/to/starfox2.sfc out/cov1 [out/cov2 ...]
+  ```
+* **Audio accuracy.** Compare against real hardware recordings.
+* **HD 3D.** Hook the remaining projection routines in `src/hd.c`.
+
+Before sending a change, check that `build/sf2.sfc` still matches the original hash and that the recompiled build
+behaves exactly like the interpreter:
+
+```bash
+build/sf2.exe --frames 2000 --hashlog rc.txt build/sf2.sfc
+build/sf2.exe --frames 2000 --hashlog interp.txt --interp build/sf2.sfc
+fc rc.txt interp.txt
+```
+
+Never commit ROMs, `data/` or `build/`.
 
 ## Layout
 
 ```
-asm/            disassembly (bankXX.s per 32 KB ROM bank, hw.inc register names)
+asm/                 disassembly, bankXX.s per 32 KB bank, hw.inc register names
 tools/
-  disasm.py     coverage-seeded recursive-descent disassembler (65816 + GSU)
-  asm.py        assembler for the disassembly; also writes build/ir.json for the recompiler
-  recomp.py     IR -> C static recompiler (CPU and SuperFX)
-  layout.py     ROM/RAM address map, RAM overlays
-  isa65816.py, isagsu.py   instruction set tables
-  extract.py    pulls data blobs out of your ROM
-  build.py      full pipeline
+  disasm.py          coverage-seeded recursive-descent disassembler (65816 + GSU)
+  asm.py             assembler; also writes build/ir.json for the recompiler
+  recomp.py          IR -> C static recompiler (CPU and SuperFX)
+  layout.py          ROM/RAM address map, RAM overlays
+  isa65816.py        instruction tables
+  isagsu.py
+  extract.py         pulls data blobs out of your ROM
+  build.py           full pipeline
 src/
-  cpu.c, cpu_ops.h    65816 (cpu_ops.h is shared with the recompiled code)
-  gsu.c, gsu_ops.h    SuperFX (gsu_ops.h is shared with the recompiled code)
-  ppu.c  apu.c  mem.c  recomp_rt.c
-  hd.c                HD SuperFX rendering (hooks + shadow bitmaps)
-  app.c ui.c video.c input.c config.c   launcher, OpenGL pipeline/CRT, input, settings
-  main.c              entry point, headless test mode
+  cpu.c cpu_ops.h    65816 (ops shared with the recompiled code)
+  gsu.c gsu_ops.h    SuperFX (ops shared with the recompiled code)
+  ppu.c apu.c mem.c recomp_rt.c
+  hd.c               HD SuperFX rendering
+  app.c ui.c video.c config.c gfx.c romwiz.c update.c
+  win32.c input.c    Windows front end
+  sdl/               SDL front end (macOS + Linux)
+  mac/ linux/        platform installers and text rendering
+installer/           Windows installer (arwing.exe)
+res/                 icons, logo, resources
 ```
 
-## How it works
+## Thanks
 
-1. **Coverage.** The runtime can record every executed 65816 instruction (with its M/X
-   register widths), every SuperFX instruction (with its ALT prefix state), every indirect
-   jump target, and where code in RAM was copied from. This resolves the hard parts of
-   65816 disassembly (variable-length immediates, jump tables) and finds RAM-resident code.
-2. **Disassembly.** `disasm.py` claims everything coverage proves is code, then extends it
-   by static recursive descent (branches, calls, pointer tables). Code that the game copies
-   into WRAM (`$7F:0000`, `$7F:7E00`, `$00:0101`) is assembled at its RAM address with
-   `.base`. Everything else is data.
-3. **Matching build.** `asm.py` rebuilds the ROM; `build.py` checks the hash.
-4. **Recompilation.** Each basic block becomes a C function made of calls to the same
-   primitive operations the interpreter uses (`cpu_ops.h` / `gsu_ops.h`), so recompiled
-   and interpreted execution are cycle-for-cycle identical. Every instruction is also an
-   entry point, so execution can resume mid-block after an interrupt. Code in RAM is only
-   run natively if its bytes still match the ROM source (self-modifying code falls back to
-   the interpreter). The interpreter handles anything the disassembly does not cover.
+* Nintendo and Argonaut Software for Star Fox 2.
+* [SDL2](https://www.libsdl.org/), [FreeType](https://freetype.org/) and [DejaVu](https://dejavu-fonts.github.io/) (macOS/Linux builds).
+* [zelda3](https://github.com/snesrev/zelda3), [sm64](https://github.com/n64decomp/sm64) and the other decomp projects for showing it can be done.
 
-## Status and verification
-
-* `build/sf2.sfc` is byte-identical to the original ROM.
-* Disassembly: 66,520 65816 instructions (~154 KB) and 23,186 SuperFX instructions (~29 KB)
-  identified, from five recorded play sessions (~240k frames) plus static analysis.
-* Recompiled vs interpreted execution produce identical per-frame state hashes
-  (checked over 20,000 frames of scripted gameplay with `--hashlog`).
-* In that run 99.7 % of CPU block dispatches and 100 % of SuperFX dispatches went to
-  recompiled code. The rest (code executed with unusual register widths, a heap-relocated
-  routine, and the runtime-patched NMI trampoline) goes through the interpreter.
-* Boots, plays intro, title, menus, map and missions (tested headless with screenshots).
-
-Known gaps:
-* Code discovery is coverage-driven plus static analysis. Code never reached in the recorded
-  sessions and not reachable statically is still `.db` data (it runs fine through the
-  interpreter). More recorded play improves the disassembly: `--cov` then rerun `disasm.py`.
-* Labels are auto-generated (`sub_`, `loc_`, `gsu_`, `tbl_`); naming and commenting the
-  game logic is the obvious next step for contributors. The generated C is a mechanical
-  translation, not hand-written decompiled C.
-* Audio has only been checked indirectly (levels, spectrogram), not against hardware.
-* HD 3D recovers sub-pixel vertices for ~66-90% of vertices (one of several projection
-  routines is hooked); the rest keep whole-pixel positions but still get clean edges.
-* Only Windows/MSVC is set up; the runtime has no other platform dependencies except
-  `main.c`.
-
-To regenerate the disassembly from coverage:
-
-```bash
-build/sf2.exe --frames 40000 --script inputs.txt --cov out/cov1
-python tools/disasm.py path/to/starfox2.sfc out/cov1 [out/cov2 ...]
-```
+Not affiliated with or endorsed by Nintendo. Star Fox is a trademark of Nintendo.
