@@ -3,7 +3,7 @@
 <h1 align="center">Project Arwing</h1>
 
 <p align="center">
-A matching disassembly of <b>Star Fox 2</b> (SNES, SuperFX GSU-2) and a native PC port built from it.<br>
+<b> StarFox 2 decomp with quality of life improvements </b>
 Windows, macOS and Linux.
 </p>
 
