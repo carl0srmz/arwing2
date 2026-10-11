@@ -80,13 +80,18 @@ static void change(Item *it, int dir) {
   *it->val = v;
 }
 
-static bool nav(int vk, u32 pm, bool *held, int *rep) {
-  bool down = input_key(vk) || (input_pad_buttons() & pm);
-  bool fire = false;
-  if (down && !*held) { fire = true; *rep = 18; }
-  else if (down && --*rep <= 0) { fire = true; *rep = 5; }
-  *held = down;
-  return fire;
+typedef struct { bool held; double next, up; } Nav;
+static bool nav(int vk, u32 pm, Nav *n) {
+  double t = plat_time();
+  if (input_key(vk) || (input_pad_buttons() & pm)) {
+    n->up = 0;
+    if (!n->held) { n->held = true; n->next = t + 0.4; return true; }
+    if (t >= n->next) { n->next = t + 0.12; return true; }
+    return false;
+  }
+  if (n->held && !n->up) n->up = t;
+  else if (n->held && t - n->up > 0.06) n->held = false;
+  return false;
 }
 
 #define TOP 30
@@ -167,13 +172,17 @@ static void draw_controls(void) {
                                                : "Enter rebinds   Left/Right switch column   Backspace clears   Esc goes back");
 }
 
-static bool k_up, k_dn, k_lt, k_rt, k_ok, k_bk, k_tab; static int r_up, r_dn, r_lt, r_rt, r_ok, r_bk, r_tab;
+static Nav n_up, n_dn, n_lt, n_rt, n_ok, n_bk, n_tab;
 static int mouse_x, mouse_y; static bool mouse_click, mouse_was;
 static int wheel;
 static Rect ubtn;
 void ui_mouse(int x, int y, bool down, int wheel_delta) { mouse_x = x; mouse_y = y; if (down && !mouse_was) mouse_click = true; mouse_was = down; wheel += wheel_delta; }
 
-void ui_init(void) { sel = 0; page = 0; capture = 0; }
+void ui_init(void) {
+  sel = 0; page = 0; capture = 0;
+  Nav *all[] = { &n_up, &n_dn, &n_lt, &n_rt, &n_ok, &n_bk, &n_tab };
+  for (int i = 0; i < 7; i++) { all[i]->held = true; all[i]->up = 0; all[i]->next = 1e300; }
+}
 
 UiResult ui_frame(bool in_game) {
   if (!in_game) update_start_check();
@@ -182,9 +191,9 @@ UiResult ui_frame(bool in_game) {
   if (sel >= nitems) sel = nitems - 1;
   UiResult res = UI_NONE;
 #define PM(a, b) ((1u << (a)) | (1u << (b)))
-  bool up = nav(VK_UP, PM(PB_DUP, PB_LS_UP), &k_up, &r_up), dn = nav(VK_DOWN, PM(PB_DDOWN, PB_LS_DOWN), &k_dn, &r_dn);
-  bool lt = nav(VK_LEFT, PM(PB_DLEFT, PB_LS_LEFT), &k_lt, &r_lt), rt = nav(VK_RIGHT, PM(PB_DRIGHT, PB_LS_RIGHT), &k_rt, &r_rt);
-  bool ok = nav(VK_RETURN, 1u << PB_SOUTH, &k_ok, &r_ok), bk = nav(VK_ESCAPE, 1u << PB_EAST, &k_bk, &r_bk), tb = nav(VK_TAB, 1u << PB_NORTH, &k_tab, &r_tab);
+  bool up = nav(VK_UP, PM(PB_DUP, PB_LS_UP), &n_up), dn = nav(VK_DOWN, PM(PB_DDOWN, PB_LS_DOWN), &n_dn);
+  bool lt = nav(VK_LEFT, PM(PB_DLEFT, PB_LS_LEFT), &n_lt), rt = nav(VK_RIGHT, PM(PB_DRIGHT, PB_LS_RIGHT), &n_rt);
+  bool ok = nav(VK_RETURN, 1u << PB_SOUTH, &n_ok), bk = nav(VK_ESCAPE, 1u << PB_EAST, &n_bk), tb = nav(VK_TAB, 1u << PB_NORTH, &n_tab);
 #undef PM
   canvas_ensure(video_width(), video_height());
 
@@ -201,7 +210,7 @@ UiResult ui_frame(bool in_game) {
       else if (k == VK_BACK) { cfg.pad[csel] = 0; capture = 0; }
       else if (b >= 0) { cfg.pad[csel] = b + 1; capture = 0; }
       ok = bk = up = dn = lt = rt = false;
-      k_ok = k_bk = true;
+      n_ok.held = n_bk.held = true; n_ok.up = n_bk.up = 0; n_ok.next = n_bk.next = 1e300;
     } else {
       if (up) csel = (csel + BIND_COUNT + 1) % (BIND_COUNT + 2);
       if (dn) csel = (csel + 1) % (BIND_COUNT + 2);

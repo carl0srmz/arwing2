@@ -98,7 +98,7 @@ void plat_error(const char *msg);
 
 int main(int argc, char **argv) {
   const char *rom_path = "build/sf2.sfc", *shot_prefix = "shot", *cov_prefix = NULL;
-  const char *gsuprof_path = NULL;
+  const char *gsuprof_path = NULL, *state_file = NULL;
   FILE *hashlog = NULL, *wav = NULL; u32 wav_frames = 0; int wramdump_frame = -1;
   int frames = -1; int shots[256]; int nshots = 0;
   for (int i = 1; i < argc; i++) {
@@ -118,6 +118,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "--misslog") && i + 1 < argc) { extern FILE *rc_misslog; rc_misslog = fopen(argv[++i], "w"); }
     else if (!strcmp(argv[i], "--wramdump") && i + 1 < argc) wramdump_frame = atoi(argv[++i]);
     else if (!strcmp(argv[i], "--hashlog") && i + 1 < argc) hashlog = fopen(argv[++i], "w");
+    else if (!strcmp(argv[i], "--state") && i + 1 < argc) state_file = argv[++i];
     else rom_path = argv[i];
   }
   if (argc == 1 || (argc == 2 && !strncmp(argv[1], "-psn", 4))) {
@@ -140,6 +141,12 @@ int main(int argc, char **argv) {
   snes_init();
   hd_reset();
   load_sram();
+  FILE *sf = state_file ? fopen(state_file, "rb") : NULL;
+  if (sf) {
+    fseek(sf, 0, SEEK_END); long n = ftell(sf); fseek(sf, 0, SEEK_SET);
+    Ser st = { malloc(n), 0, (size_t)n, true }; fread(st.buf, 1, n, sf); fclose(sf);
+    snes_serialize(&st); free(st.buf); hd_reset();
+  }
 
   if (frames >= 0) {
     for (int f = 0; f < frames; f++) {
