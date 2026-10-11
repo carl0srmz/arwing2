@@ -76,23 +76,23 @@ done | xargs -P "$(nproc)" -I{} sh -c '$CC $CFLAGS -c "$1" -o "$OBJ/$(echo "$1" 
 
 $CC "$OBJ"/*.o $("$SDLCFG" --static-libs) $FTL -lGL -lm -o build/arwing
 
-mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/licenses/project-arwing"
+mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/licenses/project-arwing-2"
 cp build/arwing "$APPDIR/usr/bin/arwing"
 ln -s usr/bin/arwing "$APPDIR/AppRun"
-cp build/icon.png "$APPDIR/project-arwing.png"
-ln -s project-arwing.png "$APPDIR/.DirIcon"
-cat > "$APPDIR/project-arwing.desktop" <<EOF
+cp build/icon.png "$APPDIR/project-arwing-2.png"
+ln -s project-arwing-2.png "$APPDIR/.DirIcon"
+cat > "$APPDIR/project-arwing-2.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Project Arwing
+Name=Project Arwing (2)
 Comment=Star Fox 2
 Exec=arwing
-Icon=project-arwing
+Icon=project-arwing-2
 Terminal=false
 Categories=Game;ActionGame;
-StartupWMClass=project-arwing
+StartupWMClass=project-arwing-2
 EOF
-L="$APPDIR/usr/share/licenses/project-arwing"
+L="$APPDIR/usr/share/licenses/project-arwing-2"
 cp /usr/share/doc/fonts-dejavu-core/copyright "$L/DejaVu.txt" 2>/dev/null || true
 for f in "$FT"/licenses/* build/sdl/licenses/*; do
   if [ -f "$f" ]; then cp "$f" "$L/"; fi

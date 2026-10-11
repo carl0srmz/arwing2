@@ -9,7 +9,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define APP "Project Arwing.app"
+#define APP "Project Arwing (2).app"
 extern char **environ;
 void plat_error(const char *msg);
 void mac_dock(const char *app, bool add);
@@ -105,7 +105,7 @@ static void path_text(int x, int y, int w, const char *p) {
 
 static void frame(const char *tag) {
   logo(8, 2);
-  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing");
+  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing (2)");
   panel(8, 36, cw - 16, ch - 44, C_PANEL, C_EDGE);
   tab(16, 30, tag);
 }
@@ -142,7 +142,7 @@ static int step(void) {
     break;
   case 10:
     frame("UNINSTALL");
-    text(18, 48, f_item, C_TEXT, "Remove Project Arwing?");
+    text(18, 48, f_item, C_TEXT, "Remove Project Arwing (2)?");
     text(18, 64, f_small, C_DIM, "Saves, settings and your ROM are kept.");
     if (gfx_button(18, y, 84, "Remove")) { err = uninstall(); page = err ? 12 : 11; }
     if (gfx_button(108, y, 84, "Cancel") || gfx_key == VK_ESCAPE) page = 0;
@@ -170,19 +170,23 @@ static bool mac_install(void) {
   if (!ends_with(old, "/" APP) || stat(old, &st)) { old[0] = 0; old_desk = 0; }
   const char *home = getenv("HOME");
   if (!home) home = "";
-  snprintf(link_path, sizeof link_path, "%s/Desktop/Project Arwing", home);
+  snprintf(link_path, sizeof link_path, "%s/Desktop/Project Arwing (2)", home);
   if (old[0]) { snprintf(dir, sizeof dir, "%s", old); *strrchr(dir, '/') = 0; }
   else if (!access("/Applications", W_OK)) snprintf(dir, sizeof dir, "/Applications");
   else { snprintf(dir, sizeof dir, "%s/Applications", home); mkdir(dir, 0755); }
   page = 0;
-  gfx_window(L"Install Project Arwing", 320, 160, step);
+  gfx_window(L"Install Project Arwing (2)", 320, 160, step);
   return false;
 }
 
 bool plat_home(void) {
   const char *home = getenv("HOME");
   char d[1024];
-  snprintf(d, sizeof d, "%s/Library/Application Support/Project Arwing", home ? home : "");
+  char old[1024], rom[1100]; struct stat st;
+  snprintf(old, sizeof old, "%s/Library/Application Support/Project Arwing", home ? home : "");
+  snprintf(rom, sizeof rom, "%s/sf2.sfc", old);
+  snprintf(d, sizeof d, "%s/Library/Application Support/Project Arwing (2)", home ? home : "");
+  if (stat(d, &st) && !stat(rom, &st)) rename(old, d);
   mkdir(d, 0755);
   if (chdir(d)) { plat_error("Can't open the data folder."); return false; }
   return mac_install();

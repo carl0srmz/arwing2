@@ -10,12 +10,15 @@
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
 
-#define APP L"Project Arwing"
-#define EXE L"Project Arwing.exe"
-#define UNKEY L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ProjectArwing"
-#define APKEY L"Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\arwing.exe"
+#define APP L"Project Arwing (2)"
+#define EXE L"Project Arwing (2).exe"
+#define UNKEY L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ProjectArwing2"
+#define APKEY L"Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\arwing2.exe"
+#define OLDKEY L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ProjectArwing"
+#define OLDAP L"Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\arwing.exe"
+#define OLDAPP L"Project Arwing"
 
-static wchar_t dir[MAX_PATH];
+static wchar_t dir[MAX_PATH], olddir[MAX_PATH];
 static int page, desk = 1;
 static const char *err;
 
@@ -65,6 +68,40 @@ static const char *install(void) {
   return NULL;
 }
 
+static bool is_sf2(const wchar_t *path) {
+  FILE *f = _wfopen(path, L"rb");
+  if (!f) return false;
+  static char buf[1 << 16]; const char *key = "Pick your Star Fox 2 ROM."; size_t k = strlen(key), n, keep = 0; bool hit = false;
+  while (!hit && (n = fread(buf + keep, 1, sizeof buf - keep, f)) > 0) {
+    n += keep;
+    for (size_t i = 0; i + k <= n && !hit; i++) hit = !memcmp(buf + i, key, k);
+    keep = n < k ? n : k - 1; memmove(buf, buf + n - keep, keep);
+  }
+  fclose(f);
+  return hit;
+}
+
+static void find_legacy(void) {
+  wchar_t exe[MAX_PATH]; DWORD n = sizeof olddir;
+  if (RegGetValueW(HKEY_CURRENT_USER, OLDKEY, L"InstallLocation", RRF_RT_REG_SZ, NULL, olddir, &n) != ERROR_SUCCESS) { olddir[0] = 0; return; }
+  join(exe, olddir, OLDAPP L".exe");
+  if (!is_sf2(exe)) olddir[0] = 0;
+}
+
+static void drop_legacy(void) {
+  if (!olddir[0]) return;
+  wchar_t f[MAX_PATH];
+  join(f, olddir, OLDAPP L".exe");
+  for (int i = 0; i < 40 && GetFileAttributesW(f) != INVALID_FILE_ATTRIBUTES && !DeleteFileW(f); i++) Sleep(250);
+  join(f, olddir, L"uninstall.exe"); DeleteFileW(f);
+  RemoveDirectoryW(olddir);
+  special(CSIDL_PROGRAMS, OLDAPP L".lnk", f); DeleteFileW(f);
+  special(CSIDL_DESKTOPDIRECTORY, OLDAPP L".lnk", f); DeleteFileW(f);
+  RegDeleteTreeW(HKEY_CURRENT_USER, OLDKEY); RegDeleteTreeW(HKEY_CURRENT_USER, OLDAP);
+  SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+  olddir[0] = 0;
+}
+
 static const char *uninstall(void) {
   wchar_t exe[MAX_PATH], lnk[MAX_PATH];
   join(exe, dir, EXE);
@@ -83,7 +120,7 @@ static const char *uninstall(void) {
 
 static void pick_dir(void) {
   BROWSEINFOW b = { 0 };
-  b.hwndOwner = gfx_hwnd; b.lpszTitle = L"Install Project Arwing in..."; b.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+  b.hwndOwner = gfx_hwnd; b.lpszTitle = L"Install Project Arwing (2) in..."; b.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
   PIDLIST_ABSOLUTE id = SHBrowseForFolderW(&b);
   if (!id) return;
   wchar_t d[MAX_PATH];
@@ -102,7 +139,7 @@ static void play(void) {
 
 static void frame(const char *tag) {
   logo(8, 2);
-  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing");
+  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing (2)");
   panel(8, 36, cw - 16, ch - 44, C_PANEL, C_EDGE);
   tab(16, 30, tag);
 }
@@ -112,7 +149,7 @@ static int step(void) {
   switch (page) {
   case 0: {
     frame("INSTALL");
-    if (gfx_button(18, y, 84, "Install")) { err = install(); page = err ? 2 : 1; }
+    if (gfx_button(18, y, 84, "Install")) { err = install(); if (!err) drop_legacy(); page = err ? 2 : 1; }
     if (gfx_button(108, y, 84, "Cancel") || gfx_key == VK_ESCAPE) return 2;
     text(18, 46, f_item, C_TEXT, "Install to");
     int bw = 56, pw = cw - 36 - bw - 6;
@@ -138,7 +175,7 @@ static int step(void) {
     break;
   case 10:
     frame("UNINSTALL");
-    text(18, 48, f_item, C_TEXT, "Remove Project Arwing?");
+    text(18, 48, f_item, C_TEXT, "Remove Project Arwing (2)?");
     text(18, 64, f_small, C_DIM, "Saves, settings and your ROM stay in %APPDATA%.");
     if (gfx_button(18, y, 84, "Remove")) { err = uninstall(); page = err ? 12 : 11; }
     if (gfx_button(108, y, 84, "Cancel") || gfx_key == VK_ESCAPE) return 2;
@@ -155,6 +192,7 @@ static int step(void) {
     if (++frames == 2) {
       for (int i = 0; i < 40 && (err = install()); i++) Sleep(250);
       if (err) { page = 2; break; }
+      drop_legacy();
       play();
       return 1;
     }
@@ -177,6 +215,15 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE prev, PWSTR cmdline, int show) {
       wchar_t d[MAX_PATH]; d[0] = 0;
       SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, d);
       swprintf(dir, MAX_PATH, L"%s\\Programs\\%s", d, APP);
+      find_legacy();
+      if (olddir[0]) {
+        size_t k = wcslen(olddir), m = wcslen(OLDAPP);
+        if (k > m && !_wcsicmp(olddir + k - m, OLDAPP) && olddir[k - m - 1] == L'\\') swprintf(dir, MAX_PATH, L"%.*s%s", (int)(k - m), olddir, APP);
+        wchar_t lnk[MAX_PATH];
+        special(CSIDL_DESKTOPDIRECTORY, OLDAPP L".lnk", lnk);
+        desk = GetFileAttributesW(lnk) != INVALID_FILE_ATTRIBUTES;
+        if (wcsstr(cmdline, L"--update")) page = 20;
+      }
     } else if (wcsstr(cmdline, L"--update")) {
       wchar_t lnk[MAX_PATH];
       special(CSIDL_DESKTOPDIRECTORY, APP L".lnk", lnk);
@@ -184,5 +231,5 @@ int WINAPI wWinMain(HINSTANCE hi, HINSTANCE prev, PWSTR cmdline, int show) {
       page = 20;
     }
   }
-  return gfx_window(page == 20 ? L"Update Project Arwing" : page ? L"Uninstall Project Arwing" : L"Install Project Arwing", 320, 160, step) > 0 ? 0 : 1;
+  return gfx_window(page == 20 ? L"Update Project Arwing (2)" : page ? L"Uninstall Project Arwing (2)" : L"Install Project Arwing (2)", 320, 160, step) > 0 ? 0 : 1;
 }

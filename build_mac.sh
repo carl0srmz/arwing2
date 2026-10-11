@@ -7,7 +7,7 @@ FLAGS="-O2 -mmacosx-version-min=11.0"
 for a in ${ARCHS:-arm64 x86_64}; do FLAGS="$FLAGS -arch $a"; done
 CFLAGS="$FLAGS -Isrc $("$SDLCFG" --cflags) -DGL_SILENCE_DEPRECATION -Wno-deprecated-declarations -Wno-unused-label"
 OBJ=build/obj/mac
-APP="build/Project Arwing.app"
+APP="build/Project Arwing (2).app"
 rm -rf "$OBJ" "$APP" build/arwing.iconset build/dmg
 mkdir -p "$OBJ"
 export CFLAGS OBJ
@@ -33,7 +33,7 @@ codesign --force --deep -s - "$APP"
 mkdir -p build/dmg
 cp -R "$APP" build/dmg/
 for i in 1 2 3; do
-  hdiutil create -volname "Project Arwing" -srcfolder build/dmg -ov -format UDZO build/arwing-macos.dmg && break
+  hdiutil create -volname "Project Arwing (2)" -srcfolder build/dmg -ov -format UDZO build/arwing-macos.dmg && break
   sleep 5
 done
 test -f build/arwing-macos.dmg

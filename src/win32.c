@@ -94,7 +94,11 @@ bool plat_home(void) {
   SetProcessDPIAware();
   wchar_t d[MAX_PATH];
   if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, d))) {
-    wcscat(d, L"\\Project Arwing"); CreateDirectoryW(d, NULL); SetCurrentDirectoryW(d);
+    wchar_t old[MAX_PATH], rom[MAX_PATH];
+    swprintf(old, MAX_PATH, L"%s\\Project Arwing", d); swprintf(rom, MAX_PATH, L"%s\\sf2.sfc", old);
+    wcscat(d, L"\\Project Arwing (2)");
+    if (GetFileAttributesW(d) == INVALID_FILE_ATTRIBUTES && GetFileAttributesW(rom) != INVALID_FILE_ATTRIBUTES) MoveFileW(old, d);
+    CreateDirectoryW(d, NULL); SetCurrentDirectoryW(d);
   }
   return true;
 }

@@ -1,6 +1,6 @@
-<p align="center"><img src="res/logo.png" width="200" alt="Project Arwing"></p>
+<p align="center"><img src="res/logo.png" width="200" alt="Project Arwing (2)"></p>
 
-<h1 align="center">Project Arwing</h1>
+<h1 align="center">Project Arwing (2)</h1>
 
 <p align="center">
 <b> StarFox 2 decomp / PC port with quality of life improvements </b>
@@ -44,7 +44,7 @@ Grab the file for your system from the [latest release](https://github.com/carlo
 | System | File | |
 |---|---|---|
 | Windows (x64) | `arwing.exe` | Run it to install. |
-| macOS 11+ (Apple Silicon / Intel) | `arwing-macos.dmg` | Open it and run Project Arwing. Not notarized: the first time, right-click → Open (macOS 15: System Settings → Privacy & Security → Open Anyway). |
+| macOS 11+ (Apple Silicon / Intel) | `arwing-macos.dmg` | Open it and run Project Arwing (2). Not notarized: the first time, right-click → Open (macOS 15: System Settings → Privacy & Security → Open Anyway). |
 | Linux x86_64 | `arwing-linux.AppImage` | `chmod +x` it and run it. |
 | Linux ARM64 | `arwing-linux-aarch64.AppImage` | Same. |
 
@@ -55,9 +55,9 @@ Settings, saves and the copied ROM live in:
 
 | | |
 |---|---|
-| Windows | `%APPDATA%\Project Arwing` |
-| macOS | `~/Library/Application Support/Project Arwing` |
-| Linux | `~/.local/share/project-arwing` |
+| Windows | `%APPDATA%\Project Arwing (2)` |
+| macOS | `~/Library/Application Support/Project Arwing (2)` |
+| Linux | `~/.local/share/project-arwing-2` |
 
 Uninstalling keeps that folder. Windows: *Settings → Apps*. macOS: run the dmg again and pick Uninstall. Linux: the app menu entry has an Uninstall action, or run the AppImage again.
 

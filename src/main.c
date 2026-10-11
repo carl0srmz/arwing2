@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
   FILE *hashlog = NULL, *wav = NULL; u32 wav_frames = 0; int wramdump_frame = -1;
   int frames = -1; int shots[256]; int nshots = 0;
   for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "--version")) { puts("Project Arwing 1.0"); return 0; }
+    if (!strcmp(argv[i], "--version")) { puts("Project Arwing (2) 1.0"); return 0; }
     else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
     else if (!strcmp(argv[i], "--shot") && i + 1 < argc) { char *p = argv[++i]; while (*p && nshots < 256) { shots[nshots++] = strtol(p, &p, 10); if (*p == ',') p++; else break; } }
     else if (!strcmp(argv[i], "--shotprefix") && i + 1 < argc) shot_prefix = argv[++i];

@@ -110,7 +110,7 @@ static int browse(void) {
 
 static int step(void) {
   logo(8, 2);
-  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing");
+  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing (2)");
   panel(8, 36, cw - 16, ch - 44, C_PANEL, C_EDGE);
   tab(16, 30, "ROM");
   static const char *head[] = { "Pick your Star Fox 2 ROM.", "That's not Star Fox 2.", "That's not the SNES Classic (Mini) version.", "Couldn't save the ROM.", "No file picker found." };
@@ -134,7 +134,7 @@ static int step(void) {
 
 bool rom_wizard(void) {
   page = 0;
-  bool ok = gfx_window(L"Project Arwing", 320, 160, step) == 1;
+  bool ok = gfx_window(L"Project Arwing (2)", 320, 160, step) == 1;
   free(buf); buf = NULL;
   return ok;
 }

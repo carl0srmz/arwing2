@@ -10,7 +10,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define ID "project-arwing"
+#define ID "project-arwing-2"
 #define APPFILE ID ".AppImage"
 extern char **environ;
 extern const unsigned char icon_png[], icon_rgba[];
@@ -59,10 +59,10 @@ static bool line_from(const char *cmd, char *out, int n) {
 int plat_pick(bool d, char *out, int n) {
   const char *cmd;
   if (have("zenity"))
-    cmd = d ? "zenity --file-selection --directory --title='Install Project Arwing in...' 2>/dev/null"
+    cmd = d ? "zenity --file-selection --directory --title='Install Project Arwing (2) in...' 2>/dev/null"
             : "zenity --file-selection --title='Pick your Star Fox 2 ROM' --file-filter='SNES ROM | *.sfc *.smc *.SFC *.SMC' --file-filter='All files | *' 2>/dev/null";
   else if (have("kdialog"))
-    cmd = d ? "kdialog --title 'Install Project Arwing in...' --getexistingdirectory ~ 2>/dev/null"
+    cmd = d ? "kdialog --title 'Install Project Arwing (2) in...' --getexistingdirectory ~ 2>/dev/null"
             : "kdialog --title 'Pick your Star Fox 2 ROM' --getopenfilename ~ '*.sfc *.smc *.SFC *.SMC|SNES ROM' 2>/dev/null";
   else return -1;
   return line_from(cmd, out, n) ? 1 : 0;
@@ -125,7 +125,7 @@ static bool write_entry(const char *path, const char *exe) {
   exec_quote(exe, q);
   char b[PATH_MAX * 10];
   int n = snprintf(b, sizeof b,
-                   "[Desktop Entry]\nType=Application\nName=Project Arwing\nComment=Star Fox 2\n"
+                   "[Desktop Entry]\nType=Application\nName=Project Arwing (2)\nComment=Star Fox 2\n"
                    "Exec=%s\nIcon=" ID "\nTerminal=false\nCategories=Game;ActionGame;\nKeywords=star;fox;snes;arwing;\n"
                    "StartupWMClass=" ID "\nActions=uninstall;\n\n[Desktop Action uninstall]\nName=Uninstall\nExec=env ARWING_UNINSTALL=1 %s\n",
                    q, q);
@@ -211,7 +211,7 @@ static void path_text(int x, int y, int w, const char *p) {
 
 static void frame(const char *tag) {
   logo(8, 2);
-  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing");
+  text_r(cw - 8, 10, f_small, C_DIM, "Project Arwing (2)");
   panel(8, 36, cw - 16, ch - 44, C_PANEL, C_EDGE);
   tab(16, 30, tag);
 }
@@ -257,7 +257,7 @@ static int step(void) {
     break;
   case 10:
     frame("UNINSTALL");
-    text(18, 48, f_item, C_TEXT, "Remove Project Arwing?");
+    text(18, 48, f_item, C_TEXT, "Remove Project Arwing (2)?");
     text(18, 64, f_small, C_DIM, "Saves, settings and your ROM are kept.");
     if (gfx_button(18, y, 84, "Remove")) { err = uninstall(); page = err ? 12 : 11; }
     if (gfx_button(108, y, 84, "Cancel") || gfx_key == VK_ESCAPE) { if (only_uninstall) return 2; page = 0; }
@@ -281,7 +281,7 @@ static bool installer(void) {
   }
   if (getenv("ARWING_UNINSTALL")) {
     only_uninstall = true; page = 10;
-    gfx_window(L"Uninstall Project Arwing", 320, 160, step);
+    gfx_window(L"Uninstall Project Arwing (2)", 320, 160, step);
     return false;
   }
   const char *ai = getenv("APPIMAGE");
@@ -290,7 +290,7 @@ static bool installer(void) {
   if (old[0]) { snprintf(dir, sizeof dir, "%s", old); *strrchr(dir, '/') = 0; }
   else snprintf(dir, sizeof dir, "%s/Applications", home);
   page = 0;
-  gfx_window(L"Install Project Arwing", 320, 160, step);
+  gfx_window(L"Install Project Arwing (2)", 320, 160, step);
   return false;
 }
 
@@ -302,7 +302,11 @@ bool plat_home(void) {
   if (x && *x == '/') snprintf(share, sizeof share, "%s", x);
   else snprintf(share, sizeof share, "%s/.local/share", home);
   char d[PATH_MAX];
+  char old[PATH_MAX], rom[PATH_MAX + 16]; struct stat st;
   snprintf(d, sizeof d, "%s/" ID, share);
+  snprintf(old, sizeof old, "%s/project-arwing", share);
+  snprintf(rom, sizeof rom, "%s/sf2.sfc", old);
+  if (stat(d, &st) && !stat(rom, &st)) rename(old, d);
   mkdirs(d);
   if (chdir(d)) { plat_error("Can't open the data folder."); return false; }
   return installer();

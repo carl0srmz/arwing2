@@ -69,7 +69,7 @@ jobs:
       - name: smoke test
         timeout-minutes: 10
         run: |
-          app="build/Project Arwing.app"
+          app="build/Project Arwing (2).app"
           bin="$app/Contents/MacOS/arwing"
           "$bin" --version
           lipo -archs "$bin" | grep -q arm64
@@ -85,7 +85,7 @@ jobs:
         timeout-minutes: 10
         run: |
           python3 -c "import struct;c=[0xf83030,0x30f830,0x3030f8,0xf8f830,0xf830f8,0x30f8f8,0xf8f8f8,0x101010];row=lambda w:b''.join(struct.pack('<I',0xff000000|c[x*8//w]) for x in range(w));f=open('preview_cache.bin','wb');f.write(struct.pack('<I',0x31565053));[f.write(row(256)*224+bytes(256*224)+row(1024)*896+bytes(48000*16)) for s in range(2)]"
-          perl -e 'alarm 90; exec @ARGV' "build/Project Arwing.app/Contents/MacOS/arwing" --uitest build/ut build/sf2.sfc || true
+          perl -e 'alarm 90; exec @ARGV' "build/Project Arwing (2).app/Contents/MacOS/arwing" --uitest build/ut build/sf2.sfc || true
           rm -f preview_cache.bin
           for f in build/ut_*.bmp; do sips -s format png "$f" --out "${f%.bmp}.png" >/dev/null; done
           ls build/ut_*.png
@@ -93,14 +93,14 @@ jobs:
       - name: wizard launch test
         timeout-minutes: 5
         run: |
-          "build/Project Arwing.app/Contents/MacOS/arwing" & p=$!
+          "build/Project Arwing (2).app/Contents/MacOS/arwing" & p=$!
           sleep 10; screencapture -x build/ut_install.png || true
           kill $p
-          ditto "build/Project Arwing.app" "/Applications/Project Arwing.app"
-          "/Applications/Project Arwing.app/Contents/MacOS/arwing" & p=$!
+          ditto "build/Project Arwing (2).app" "/Applications/Project Arwing (2).app"
+          "/Applications/Project Arwing (2).app/Contents/MacOS/arwing" & p=$!
           sleep 10; screencapture -x build/ut_romwiz.png || true
           kill $p
-          rm -rf "/Applications/Project Arwing.app" "$HOME/Library/Application Support/Project Arwing"
+          rm -rf "/Applications/Project Arwing (2).app" "$HOME/Library/Application Support/Project Arwing (2)"
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -202,8 +202,8 @@ jobs:
           ! ldd "$bin" | grep -i -e sdl -e freetype
           objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
           APPIMAGE_EXTRACT_AND_RUN=1 "$ai" --version | grep -q "Project Arwing"
-          desktop-file-validate build/AppDir/project-arwing.desktop
-          ls build/AppDir/usr/share/licenses/project-arwing
+          desktop-file-validate build/AppDir/project-arwing-2.desktop
+          ls build/AppDir/usr/share/licenses/project-arwing-2
           timeout 120 "$bin" --frames 120 --hashlog build/rc.txt build/sf2.sfc
           timeout 120 "$bin" --frames 120 --hashlog build/interp.txt --interp build/sf2.sfc
           cmp build/rc.txt build/interp.txt
@@ -225,18 +225,18 @@ jobs:
           export DISPLAY=:98 HOME="$(mktemp -d)" APPIMAGE_EXTRACT_AND_RUN=1
           mkdir -p "$HOME/Desktop"
           ai="$PWD/build/${{ matrix.file }}"
-          inst="$HOME/Applications/project-arwing.AppImage"
-          data="$HOME/.local/share/project-arwing"
+          inst="$HOME/Applications/project-arwing-2.AppImage"
+          data="$HOME/.local/share/project-arwing-2"
           shot() { import -window root "build/ut_$1.png"; }
           stop() { pkill -KILL -x AppRun || true; sleep 2; }
           press() { xdotool search --sync --name "$1" windowfocus --sync key "$2"; }
           "$ai" & sleep 12; shot 20_install
           press "Install Project Arwing" Return; sleep 4; shot 21_installed
           test -x "$inst"
-          cat "$HOME/.local/share/applications/project-arwing.desktop"
-          desktop-file-validate "$HOME/.local/share/applications/project-arwing.desktop"
-          test -s "$HOME/.local/share/icons/hicolor/256x256/apps/project-arwing.png"
-          test -x "$HOME/Desktop/project-arwing.desktop"
+          cat "$HOME/.local/share/applications/project-arwing-2.desktop"
+          desktop-file-validate "$HOME/.local/share/applications/project-arwing-2.desktop"
+          test -s "$HOME/.local/share/icons/hicolor/256x256/apps/project-arwing-2.png"
+          test -x "$HOME/Desktop/project-arwing-2.desktop"
           cat "$data/install_path"
           press "Install Project Arwing" Escape; sleep 2; stop
           "$inst" & sleep 12; shot 22_romwiz
@@ -249,9 +249,9 @@ jobs:
           press "Uninstall Project Arwing" Return; sleep 3; shot 26_removed
           press "Uninstall Project Arwing" Escape; sleep 2; stop
           test ! -e "$inst"
-          test ! -e "$HOME/.local/share/applications/project-arwing.desktop"
-          test ! -e "$HOME/Desktop/project-arwing.desktop"
-          test ! -e "$HOME/.local/share/icons/hicolor/256x256/apps/project-arwing.png"
+          test ! -e "$HOME/.local/share/applications/project-arwing-2.desktop"
+          test ! -e "$HOME/Desktop/project-arwing-2.desktop"
+          test ! -e "$HOME/.local/share/icons/hicolor/256x256/apps/project-arwing-2.png"
           test -f "$data/sf2.sfc"
       - if: always()
         uses: actions/upload-artifact@v4
@@ -283,7 +283,7 @@ jobs:
           notes="Windows: run arwing.exe to install."
           if [ -f dist/arwing-macos.dmg ]; then
             gh release upload 1.0 dist/arwing-macos.dmg --clobber
-            notes="$notes Mac: open arwing-macos.dmg and run Project Arwing to install. It isn't notarized, so the first time right-click it and pick Open (macOS 15: System Settings > Privacy & Security > Open Anyway)."
+            notes="$notes Mac: open arwing-macos.dmg and run Project Arwing (2) to install. It isn't notarized, so the first time right-click it and pick Open (macOS 15: System Settings > Privacy & Security > Open Anyway)."
           fi
           if [ -f dist/arwing-linux.AppImage ]; then
             gh release upload 1.0 dist/arwing-linux.AppImage --clobber
