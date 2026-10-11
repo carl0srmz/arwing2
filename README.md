@@ -204,4 +204,9 @@ res/                 icons, logo, resources
 * [SDL2](https://www.libsdl.org/), [FreeType](https://freetype.org/) and [DejaVu](https://dejavu-fonts.github.io/) (macOS/Linux builds).
 * [zelda3](https://github.com/snesrev/zelda3), [sm64](https://github.com/n64decomp/sm64) and the other decomp projects for showing it can be done.
 
+## License
+
+[MIT](LICENSE) for the tools, runtime and installer. `asm/` is a disassembly of Nintendo's code and isn't covered;
+neither is anything extracted from a ROM.
+
 Not affiliated with or endorsed by Nintendo. Star Fox is a trademark of Nintendo.
