@@ -10,8 +10,8 @@
 
 extern const char build_id[];
 
-#define REPO "https://github.com/carlosrmz009/project-arwing"
-#define TAG_API "https://api.github.com/repos/carlosrmz009/project-arwing/git/ref/tags/1.0"
+#define REPO "https://github.com/carlosrmz009/arwing2"
+#define TAG_API "https://api.github.com/repos/carlosrmz009/arwing2/git/ref/tags/1.0"
 
 static volatile int state;
 static char tmp[1024];

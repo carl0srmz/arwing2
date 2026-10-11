@@ -9,8 +9,8 @@ Windows, macOS and Linux.
 </p>
 
 <p align="center">
-<a href="https://github.com/carlosrmz009/project-arwing/actions/workflows/build.yml"><img src="https://github.com/carlosrmz009/project-arwing/actions/workflows/build.yml/badge.svg" alt="build"></a>
-<a href="https://github.com/carlosrmz009/project-arwing/releases/latest"><img src="https://img.shields.io/github/v/release/carlosrmz009/project-arwing?label=download" alt="download"></a>
+<a href="https://github.com/carlosrmz009/arwing2/actions/workflows/build.yml"><img src="https://github.com/carlosrmz009/arwing2/actions/workflows/build.yml/badge.svg" alt="build"></a>
+<a href="https://github.com/carlosrmz009/arwing2/releases/latest"><img src="https://img.shields.io/github/v/release/carlosrmz009/arwing2?label=download" alt="download"></a>
 </p>
 
 ---
@@ -39,7 +39,7 @@ Windows, macOS and Linux.
 
 ## Play
 
-Grab the file for your system from the [latest release](https://github.com/carlosrmz009/project-arwing/releases/latest):
+Grab the file for your system from the [latest release](https://github.com/carlosrmz009/arwing2/releases/latest):
 
 | System | File | |
 |---|---|---|
