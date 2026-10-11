@@ -4,6 +4,7 @@
 
 <p align="center">
 <b> StarFox 2 decomp with quality of life improvements </b>
+<br>
 Windows, macOS and Linux.
 </p>
 
