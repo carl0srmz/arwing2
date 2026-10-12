@@ -3,7 +3,7 @@
 <h1 align="center">Project Arwing (2)</h1>
 
 <p align="center">
-<b> StarFox 2 decomp / PC port with quality of life improvements </b>
+<b> StarFox 2 recompilation / PC port with quality of life improvements </b>
 <br>
 Windows, macOS and Linux.
 </p>
