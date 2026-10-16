@@ -31,8 +31,6 @@ Windows, macOS and Linux.
 <tr><th>OG SUPERFX</th><th>ARWING HD3D (4x)</th></tr>
 <tr><td><img src="res/screens/greatfox_og.png" alt="Great Fox, original"></td><td><img src="res/screens/greatfox_hd.png" alt="Great Fox, HD 3D"></td></tr>
 <tr><td><img src="res/screens/arwings_og.png" alt="Arwings, original"></td><td><img src="res/screens/arwings_hd.png" alt="Arwings, HD 3D"></td></tr>
-<tr><td><img src="res/screens/dragon_og.png" alt="Mirage Dragon, original"></td><td><img src="res/screens/dragon_hd.png" alt="Mirage Dragon, HD 3D"></td></tr>
-<tr><td><img src="res/screens/leon_og.png" alt="Leon, original"></td><td><img src="res/screens/leon_hd.png" alt="Leon, HD 3D"></td></tr>
 </table>
 
 <p align="center"><img src="res/screens/crt.png" width="80%" alt="CRT filter"><br><sub>CRT filter with HD 3D</sub></p>
