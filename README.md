@@ -68,7 +68,7 @@ The setup menu has a live preview. Esc, Home or Select+Start opens it in game.
 | HD 3D | Off / 2x / 3x / 4x. Redraws the polygons at higher res. Sprites and textures stay 1x. Doesn't touch game state. |
 | Filter | Sharp, Smooth, Scale4x, or CRT (grille/shadow/slot mask, scanlines, glow, curvature) |
 | Aspect | 4:3, 8:7, 16:9 fill (blurred sides), 16:9 stretch. No true widescreen: the 3D view is a fixed-width bitmap. |
-| SuperFX | Normal, Fast or Turbo. The game runs its logic once per drawn frame, so a faster SuperFX also makes it play faster. Fast and Turbo keep the original timing and only speed up the SuperFX and CPU when a frame runs late, so busy scenes stop dropping below 15 fps (Fast) or 20 fps (Turbo). Light scenes and cutscenes play exactly like the original. |
+| Frame rate | Original or Smooth. Smooth removes the slowdown: the game logic runs at its full 20 ticks per second, with the SuperFX and CPU sped up only for frames that would run late. Cutscenes keep their original timing so they stay in sync with the music. Unlike Project Arwing for Star Fox, there are no interpolated 60 fps frames yet: Star Fox 2's renderer state isn't mapped well enough to blend between ticks without glitches. |
 | Sound | Accurate (SNES filter) or Hi-res (no muffling, 48 kHz) |
 | Misc | Integer scaling, fullscreen, VSync, FPS counter, volume, fast-forward speed |
 
