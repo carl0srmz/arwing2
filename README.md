@@ -68,7 +68,7 @@ The setup menu has a live preview. Esc, Home or Select+Start opens it in game.
 | HD 3D | Off / 2x / 3x / 4x. Redraws the polygons at higher res. Sprites and textures stay 1x. Doesn't touch game state. |
 | Filter | Sharp, Smooth, Scale4x, or CRT (grille/shadow/slot mask, scanlines, glow, curvature) |
 | Aspect | 4:3, 8:7, 16:9 fill (blurred sides), 16:9 stretch. No true widescreen: the 3D view is a fixed-width bitmap. |
-| Frame rate | Original or Smooth. Smooth removes the slowdown: the game logic runs at its full 20 ticks per second, with the SuperFX and CPU sped up only for frames that would run late. Cutscenes keep their original timing so they stay in sync with the music. Unlike Project Arwing for Star Fox, there are no interpolated 60 fps frames yet: Star Fox 2's renderer state isn't mapped well enough to blend between ticks without glitches. |
+| Frame rate | Original or Smooth. Smooth removes the slowdown (the game logic runs at its full 20 ticks per second, with the SuperFX and CPU sped up only for frames that would run late) and, in battles, draws interpolated frames in between for 60 fps. Cutscenes, the map and menus keep their original timing so they stay in sync with the music; they are not interpolated yet. |
 | Sound | Accurate (SNES filter) or Hi-res (no muffling, 48 kHz) |
 | Misc | Integer scaling, fullscreen, VSync, FPS counter, volume, fast-forward speed |
 
