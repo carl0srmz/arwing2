@@ -316,8 +316,10 @@ static inline u16 cmath(u16 a, u16 b, bool sub, bool half) {
   return r | g << 5 | bl << 10;
 }
 
+// Brightness in 1/16 steps, so smooth.c can ease a fade between the game's own steps.
+int ppu_br16 = -1, ppu_br_base;
 static inline u32 rgb_out(u16 color, int br) {
-  int r = (color & 31) * br / 15, g = ((color >> 5) & 31) * br / 15, b = ((color >> 10) & 31) * br / 15;
+  int r = (color & 31) * br / 240, g = ((color >> 5) & 31) * br / 240, b = ((color >> 10) & 31) * br / 240;
   return 0xff000000 | (r << 19 | (r >> 2) << 16) | (g << 11 | (g >> 2) << 8) | (b << 3 | b >> 2);
 }
 
@@ -366,7 +368,8 @@ void ppu_render_line(int line) {
   int clipm = (cgwsel >> 6) & 3, prevm = (cgwsel >> 4) & 3;
   int hn = hd_active_scale;
   u32 *hout = hn ? &hd_framebuf[(line - 1) * hn * 256 * hn] : NULL;
-  int br = ppu_inidisp & 15;
+  int br = (ppu_inidisp & 15) * 16;
+  if (ppu_br16 >= 0 && (ppu_inidisp & 15) == ppu_br_base) br = ppu_br16;
   for (int x = 0; x < 256; x++) {
     int mz = -1, ml = 5; u16 mc = back;
     int mz2 = -1; u16 mc2 = back;
@@ -426,6 +429,45 @@ typedef struct { u16 cgram[256]; u8 oam[544]; u16 fixed_color; u8 cgwsel, cgadsu
 static Ppu2d p2d;
 void ppu_keep_2d(void) { memcpy(p2d.cgram, cgram, sizeof cgram); memcpy(p2d.oam, oam, sizeof oam); p2d.fixed_color = fixed_color; p2d.cgwsel = cgwsel; p2d.cgadsub = cgadsub; p2d.obsel = obsel; }
 void ppu_use_2d(void) { memcpy(cgram, p2d.cgram, sizeof cgram); memcpy(oam, p2d.oam, sizeof oam); fixed_color = p2d.fixed_color; cgwsel = p2d.cgwsel; cgadsub = p2d.cgadsub; obsel = p2d.obsel; }
+
+// Display registers the game's frozen logic would have set during the real frame (fades, windows,
+// layer enables, scroll). Recorded per line while the real frame is drawn, replayed on the copy's frame.
+typedef struct {
+  u8 inidisp, mosaic, bgmode, bgsc[4], wsel[3], wh[4], wbglog, wobjlog, tm, ts, tmw, tsw, cgwsel, cgadsub, setini, obsel;
+  u16 bghofs[4], bgvofs[4], fixed_color;
+} LineRegs;
+static LineRegs lregs[240];
+#define LR_BYTES(X) X(inidisp, ppu_inidisp) X(mosaic, mosaic) X(bgmode, bgmode) X(wbglog, wbglog) X(wobjlog, wobjlog) X(tm, tm) X(ts, ts) \
+  X(tmw, tmw) X(tsw, tsw) X(cgwsel, cgwsel) X(cgadsub, cgadsub) X(setini, setini) X(obsel, obsel)
+void ppu_regs_keep(int y) {
+  LineRegs *l = &lregs[y];
+#define K(f, v) l->f = v;
+  LR_BYTES(K)
+#undef K
+  memcpy(l->bgsc, bgsc, sizeof bgsc); memcpy(l->wsel, wsel, sizeof wsel); memcpy(l->wh, wh, sizeof wh);
+  memcpy(l->bghofs, bghofs, sizeof bghofs); memcpy(l->bgvofs, bgvofs, sizeof bgvofs); l->fixed_color = fixed_color;
+}
+int ppu_blend_num, ppu_blend_den = 1;
+static u16 lerp_scroll(u16 a, u16 b) {
+  if ((a | b) > 0x3ff) return a;
+  int d = (b - a) & 0x3ff;
+  if (d > 512) d -= 1024;
+  return (u16)((a + d * ppu_blend_num / ppu_blend_den) & 0x3ff);
+}
+// The copy's own values are the next tick's; the flags and layer setup come from the real frame, and what the
+// game steps once per tick (scroll) is moved from the real frame's value to the copy's.
+void ppu_regs_use(int y) {
+  LineRegs *l = &lregs[y];
+  u16 hs[4], vs[4];
+  for (int i = 0; i < 4; i++) { hs[i] = lerp_scroll(l->bghofs[i], bghofs[i]); vs[i] = lerp_scroll(l->bgvofs[i], bgvofs[i]); }
+#define U(f, v) v = l->f;
+  LR_BYTES(U)
+#undef U
+  memcpy(bgsc, l->bgsc, sizeof bgsc); memcpy(wsel, l->wsel, sizeof wsel); memcpy(wh, l->wh, sizeof wh); fixed_color = l->fixed_color;
+  memcpy(bghofs, hs, sizeof hs); memcpy(bgvofs, vs, sizeof vs);
+}
+
+u8 ppu_get_nba(void) { return bgnba[0]; }
 
 void ppu_serialize(Ser *s) {
   SER(s, vram); SER(s, cgram); SER(s, oam); SER(s, ppu_inidisp); SER(s, ppu_overscan);

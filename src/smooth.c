@@ -22,7 +22,12 @@ static const u8 sm_rot[3] = { 0x12, 0x14, 0x16 };   // x/y/z angles, low byte of
 // Not interpolated yet. The renderer works from a block at $7e:b000 the previous tick left behind, but its
 // layout changes with the kind of battle and scene, and blending it without knowing that layout shows
 // glitches. Until it is mapped, Smooth only removes slowdown in Star Fox 2.
-static int blend_words(const u8 *B, const u16 **w) { (void)B; if (w) *w = NULL; return -1; }
+// Only battles (game mode 1) are mapped; the title, cutscenes, map and showcase run at their own rate for now.
+static int blend_words(const u8 *B, const u16 **w) { if (w) *w = NULL; return B[0x1b68] == 1 ? 0 : -1; }
+// The SuperFX draws from records the logic wrote into this block: positions as 8/16/24-bit fields at any
+// alignment, next to counters and flags. Bytes that moved a little are blended, the rest flip halfway.
+#define SM_BLK_LO 0xb000
+#define SM_BLK_HI 0xb400
 static bool same_kind(const u8 *A, const u8 *B, u32 o) { return !memcmp(&A[o + 0x18], &B[o + 0x18], 3); }
 // The main loop starts each tick by writing the frame count to $1604, then $20 to $00 to start sending
 // the image drawn last tick. Object movement runs after the render, so the state at that point is
@@ -58,9 +63,39 @@ void ppu_keep_2d(void), ppu_use_2d(void);
 
 // The game's 2D layer (palette, sprites, flashes) runs a tick ahead of the 3D image and the copy's logic is
 // frozen, so an interpolated frame takes the 2D state the real machine shows at the start of that frame.
+// Fades step the brightness once every few frames. Once two equal steps at equal intervals have gone by, ease
+// towards the next step over the interval so the fade moves every frame.
+extern int ppu_br16, ppu_br_base;
+static struct { int val; long frame; } fade[3]; static int fade_n;
+static void fade_track(void) {
+  extern u8 ppu_inidisp;
+  ppu_br16 = -1;
+  if (ppu_inidisp & 0x80) { fade_n = 0; return; }
+  int b = ppu_inidisp & 15;
+  if (!fade_n || fade[fade_n - 1].val != b) {
+    if (fade_n == 3) { fade[0] = fade[1]; fade[1] = fade[2]; fade_n = 2; }
+    fade[fade_n].val = b; fade[fade_n].frame = frame_no; fade_n++;
+  }
+  if (fade_n < 3) return;
+  int s1 = fade[1].val - fade[0].val, s2 = fade[2].val - fade[1].val;
+  long p1 = fade[1].frame - fade[0].frame, p2 = fade[2].frame - fade[1].frame;
+  if (!s2 || s1 != s2 || p2 < 2 || p1 < p2 - 1 || p1 > p2 + 1) return;
+  long t = frame_no - fade[2].frame;
+  if (t > p2 + 1) return;   // the next step is overdue: the fade is over
+  if (t > p2) t = p2;
+  int v = fade[2].val * 16 + (int)(s2 * 16 * t / p2);
+  ppu_br16 = v < 0 ? 0 : v > 240 ? 240 : v; ppu_br_base = fade[2].val;
+}
+static int fade_keep = -1, fade_keep_base;
 void smooth_line1(void) {
-  if (!emu_clone) { if (smooth_on) ppu_keep_2d(); }
-  else if (cl_capture) ppu_use_2d();
+  if (!emu_clone) { if (smooth_on) ppu_keep_2d(); else ppu_br16 = -1; }
+  else if (cl_capture) { ppu_use_2d(); ppu_br16 = fade_keep; ppu_br_base = fade_keep_base; }
+}
+
+void ppu_regs_keep(int y), ppu_regs_use(int y);
+void smooth_line_regs(int y) {
+  if (!emu_clone) { if (smooth_on) { ppu_regs_keep(y); if (y == 100) { fade_track(); fade_keep = ppu_br16; fade_keep_base = ppu_br_base; } } }
+  else if (cl_capture) ppu_regs_use(y);
 }
 
 extern bool gsu_skip_run;
@@ -144,7 +179,20 @@ static void restore_obj(const u8 *A, u32 o, bool linked) {
   if (linked) { wr16(o, n); wr16(o + 2, p); } else link_obj(o);
 }
 
+#ifdef SM_BLK_LO
+static void blend_block(const u8 *A, const u8 *B, int num, int den) {
+  for (u32 a = SM_BLK_LO; a < SM_BLK_HI; a++) {
+    int d = (s8)(B[a] - A[a]);
+    if (!d) { wram[a] = A[a]; continue; }
+    if (d > 48 || d < -48) { wram[a] = num * 2 >= den ? B[a] : A[a]; continue; }
+    wram[a] = (u8)mix(A[a], d, num, den);
+  }
+}
+#endif
 static void blend(const u8 *A, const u8 *B, int num, int den) {
+#ifdef SM_BLK_LO
+  blend_block(A, B, num, den);
+#endif
   const u16 *words; int nw = blend_words(B, &words);
   for (int i = 0; i < nw; i++) {
     u16 o = words[i]; s16 a = (s16)rd16(A, o), d = (s16)(rd16(B, o) - a);
@@ -165,6 +213,7 @@ static void blend(const u8 *A, const u8 *B, int num, int den) {
     if (!ona[i] || !onb[i]) continue;
     u32 o = SM_AL0 + i * SM_ALSZ;
     if (i && !same_kind(A, B, o)) continue;
+    if (i) restore_obj(A, o, true);   // animation and state stay the older tick's, as on the real frames
     bool jump = false;
     for (int k = 0; k < 3; k++) { s16 d = (s16)(rd16(B, o + SM_POS + k * 2) - rd16(A, o + SM_POS + k * 2)); if (d > 2000 || d < -2000) jump = true; }
     if (jump) continue;
@@ -179,7 +228,10 @@ extern u32 gsu_mul, gsu_base_mul;
 void apu_set_silent(bool on);
 void pace_clone(bool on);
 
+extern int ppu_blend_num, ppu_blend_den;
+u8 ppu_get_nba(void);
 static bool clone_frame(Snap *A, Snap *B, int num, int den) {
+  ppu_blend_num = num; ppu_blend_den = den;
   real.pos = 0; real.load = false;
   snes_serialize(&real);
   u16 tick = tick_now();
@@ -187,6 +239,7 @@ static bool clone_frame(Snap *A, Snap *B, int num, int den) {
   emu_clone = true; ppu_skip = true; apu_set_silent(true); hd_ctx(1);
   u8 nba = last_nba;
   B->st.pos = 0; B->st.load = true; snes_serialize(&B->st);
+  last_nba = ppu_get_nba();   // swaps are judged against the copy's own screen, not the real machine's
   tick_set(B->tick);
   blend(A->wram, B->wram, num, den);
   freeze();
@@ -238,10 +291,21 @@ void smooth_present(void) {
   Snap *A = find(cur_tick), *B = find((u16)(cur_tick + 1));
   // If the copy never gets its image on screen (the game left its 3D loop), the last frame stays up and
   // real frames are drawn again until the next swap.
-  if (!A || !B || !clone_frame(A, B, cur_num, cur_den)) cur_fail = true;
+  static u32 keep[256 * 239], hd_keep[256 * 8 * 239 * 8];
+  size_t hn = hd_active_scale ? (size_t)256 * hd_active_scale * 239 * hd_active_scale : 0;
+  bool had = false;
+  for (int i = 0; i < 256 * 224 && !had; i++) had = framebuf[i] & 0xffffff;
+  if (hn <= sizeof hd_keep / 4) { memcpy(keep, framebuf, sizeof keep); if (hn) memcpy(hd_keep, hd_framebuf, hn * 4); }
+  bool ok = A && B && clone_frame(A, B, cur_num, cur_den);
+  // A copy that comes out completely black while the screen was not is a miss: keep the old image.
+  bool blank = ok && had;
+  for (int i = 0; i < 256 * 224 && blank; i++) blank = !(framebuf[i] & 0xffffff);
+  if (blank && hn <= sizeof hd_keep / 4) { memcpy(framebuf, keep, sizeof keep); if (hn) memcpy(hd_framebuf, hd_keep, hn * 4); }
+  if (!ok) cur_fail = true;
 }
 
 void smooth_reset(void) {
+  fade_n = 0; ppu_br16 = -1;
   for (int i = 0; i < 4; i++) snaps[i].valid = false;
   pend_ok = shown_ok = new_ok = swapped = smooth_snap_due = cur_interp = cur_fail = false;
   swap_frame = frame_no - 1000;
