@@ -2,7 +2,7 @@
 
     .db $e4,$00,$64,$00
 
-sub_038004:
+GameTick:    ; one battle frame: $1291 (IRQ count) -> $1604, then calls the per-frame update routines (watch: $1604 written at 03:800B every tick)
 .cpu
 .a8
 .i16
@@ -1206,7 +1206,7 @@ sub_038e7e:
     lda #$e2
     sta $97
     lda $12,x
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -4485,7 +4485,7 @@ loc_03ab6c:
     lda $e4
     sta $97
     lda $12,x
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -5857,7 +5857,7 @@ loc_03b6e5:
 .a8
     rts
 
-sub_03b73e:
+MainLoop:    ; game mode loop: calls the handler ModeHandlerTable[$1b68 * 4] until the mode changes; entered from MainInit (code)
 .i8
     pha
     phx
@@ -5920,7 +5920,7 @@ loc_03b786:
     sta $1b6e
     sep #$20
 .a8
-    jsr (tbl_03b873,x)
+    jsr (ModeHandlerTable,x)
     bra loc_03b786
 
 loc_03b7aa:
@@ -6035,7 +6035,7 @@ sub_03b841:
 .a8
     rts
 
-tbl_03b873:
+ModeHandlerTable:    ; 16 entries of 4 bytes indexed by the game mode $1b68, word 0 the handler: mode 1 (battle) 03b90e, 7 (map) 03be22 (code)
     .db $b7,$b8,$00,$00,$0e,$b9,$8d,$02,$2d,$bc,$54,$00,$d5,$bb,$84,$01
     .db $82,$bc,$8d,$02,$d5,$bb,$5a,$02,$4c,$be,$11,$00,$22,$be,$25,$00
     .db $51,$be,$92,$01,$65,$be,$b0,$01,$56,$be,$a5,$01,$51,$be,$9d,$01
@@ -6849,7 +6849,7 @@ loc_03bf94:
     rep #$20
 .a16
     lda #$0002
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     stz $1c20
@@ -6932,7 +6932,7 @@ loc_03c01b:
     rep #$20
 .a16
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_03c060
@@ -7012,7 +7012,7 @@ loc_03c0ad:
 
 loc_03c0cd:
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
     lda $1c20
     and #$00ff
     beq loc_03c135
@@ -7074,7 +7074,7 @@ loc_03c135:
     rep #$20
 .a16
     lda #$0001
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rep #$20
@@ -7109,7 +7109,7 @@ loc_03c178:
 loc_03c182:
     jsl sub_03dd81
     jsl sub_0b8c21
-    jsl sub_038004
+    jsl GameTick
     jsl sub_03c193
     rts
 
@@ -7183,7 +7183,7 @@ loc_03c1f6:
     bit #$1000
     beq loc_03c27e
     lda #$0042
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0010
     tsb $1b96
     bra loc_03c27e
@@ -7195,7 +7195,7 @@ loc_03c22f:
     lda #$0010
     tsb $1b96
     lda #$000e
-    jsl sub_7f6e09
+    jsl QueueSound
     bra loc_03c27e
 
 loc_03c246:
@@ -7283,7 +7283,7 @@ loc_03c2ab:
     rep #$20
 .a16
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     lda $1c1f
@@ -7338,7 +7338,7 @@ loc_03c339:
     rep #$20
 .a16
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     lda #$00
@@ -7492,7 +7492,7 @@ loc_03c44d:
     rep #$20
 .a16
     lda #$0008
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     brl loc_03c328
@@ -7593,7 +7593,7 @@ loc_03c4fe:
     rts
 
 loc_03c500:
-    jsl sub_03c70a
+    jsl CheckPause
     jsl sub_03c509
     rts
 
@@ -7602,7 +7602,7 @@ sub_03c509:
     lda #$7e
     pha
     plb
-    jsr sub_03c6e4
+    jsr LoadPilotScore
     rep #$20
 .a16
     lda $1c67
@@ -7670,7 +7670,7 @@ loc_03c584:
     tsb $1b96
 
 loc_03c59b:
-    jsl sub_7f5f39
+    jsl DamageCorneria
     lda $1b96
     bit #$8000
     bne loc_03c5cf
@@ -7758,7 +7758,7 @@ loc_03c650:
     lda #$0008
     jsl sub_7f6df8
     lda #$00f1
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0014
     sta $1b76
     lda #$0004
@@ -7830,7 +7830,7 @@ loc_03c6e0:
     plb
     rtl
 
-sub_03c6e4:
+LoadPilotScore:    ; copies the pilot record's score ($6c33,y) to $d816 (watch: $d816 written at 03:C6FC every tick; $d816 is the HUD score)
     php
     phb
     sep #$20
@@ -7856,7 +7856,7 @@ sub_03c6e4:
     plp
     rts
 
-sub_03c70a:
+CheckPause:    ; Start press ($1296 bit $1000) while targets remain sets pause bit $20 of $1b84 (watch: written at 03:C735 on a Start tap in the first battle; screenshot: CONTINUE BATTLE / RETURN TO MAP menu)
     rep #$20
 .a16
     lda $1b84
@@ -9850,7 +9850,7 @@ sub_03e1d4:
     pha
     plb
     pla
-    jsl sub_03e409
+    jsl SpcUpload
     plp
     plx
     plb
@@ -9908,7 +9908,7 @@ loc_03e243:
     rep #$20
 .a16
     lda #$00f0
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_03e25c:
@@ -9939,7 +9939,7 @@ loc_03e28a:
     rep #$20
 .a16
     lda #$00fe
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_03e295:
@@ -9956,7 +9956,7 @@ loc_03e295:
     and #$00ff
     sta $1ce1
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     lda $03e495,x
     and #$00ff
     bne loc_03e2bb
@@ -10120,7 +10120,7 @@ sub_03e3c7:
     lda #$0f
     sta APUIO0
     pla
-    jsl sub_03e409
+    jsl SpcUpload
     ldx #$0000
 
 loc_03e3dc:
@@ -10140,7 +10140,7 @@ sub_03e3ea:
     rep #$20
 .a16
     lda #$00f5
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_03e404
@@ -10149,7 +10149,7 @@ loc_03e3f9:
     rep #$20
 .a16
     lda #$00f6
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_03e404:
@@ -10157,7 +10157,7 @@ loc_03e404:
     jsl sub_0befef
     rtl
 
-sub_03e409:
+SpcUpload:    ; SPC700 boot-ROM block transfer: waits for $BBAA on APUIO0, answers $CC, streams the blocks; MainInit uploads the SPC700 program with it (code)
     sta $fe
     ldx #$0000
     stx $fc
@@ -10449,10 +10449,10 @@ MainInit:
     txs
     sep #$10
 .i8
-    jsl sub_03eabc
-    jsr sub_03ea28
-    jsr sub_03ebc7
-    jsr sub_03ebe9
+    jsl InitHardwareRegisters
+    jsr ClearMemory
+    jsr CheckVideoRegion
+    jsr CheckControllers
     jsl sub_0bf03f
     rep #$20
 .a16
@@ -10487,7 +10487,7 @@ loc_03e9d7:
     jsl sub_0befe5
     sep #$30
     jsl sub_0382bb
-    jsl sub_03b73e
+    jsl MainLoop
     sep #$20
     lda #$00
     pha
@@ -10503,7 +10503,7 @@ loc_03e9d7:
     .db $00,$5b,$a2,$ff,$02,$9a,$e2,$30,$78,$22,$bc,$ea,$03,$20,$28,$ea
     .db $80,$d0
 
-sub_03ea28:
+ClearMemory:    ; zero-fills most of WRAM and SuperFX RAM; MainInit calls it right after InitHardwareRegisters (code)
     php
     sep #$20
     lda #$7e
@@ -10600,7 +10600,7 @@ loc_03eaa6:
 .i8
     rts
 
-sub_03eabc:
+InitHardwareRegisters:    ; writes the PPU, IRQ, math and DMA-enable registers once; first call of MainInit (code)
     sei
     lda #$01
     sta $163e
@@ -10699,7 +10699,7 @@ sub_03ebc6:
 .i16
     rtl
 
-sub_03ebc7:
+CheckVideoRegion:    ; tests STAT78 bit 4 (PAL) and goes to the error screen at loc_03ecaf on PAL (code)
 .i8
     php
     phb
@@ -10725,7 +10725,7 @@ loc_03ebe6:
     plp
     rts
 
-sub_03ebe9:
+CheckControllers:    ; strobes JOYSER0 and reads 16 bits per port; anything but a standard pad goes to the error screen at loc_03ece6 (code)
     php
     phb
     sep #$30
@@ -11135,7 +11135,7 @@ loc_03f0bf:
     rep #$20
 .a16
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_03f0ca:
@@ -11195,7 +11195,7 @@ loc_03f117:
     rep #$20
 .a16
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_03f122:
@@ -11236,7 +11236,7 @@ loc_03f143:
     plp
     trb $20c2
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rts

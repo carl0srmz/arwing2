@@ -1705,12 +1705,12 @@ loc_0b8a51:
     lda $0c,x
     bne loc_0b8a78
     lda #$005b
-    jsl sub_7f6e09
+    jsl QueueSound
     bra loc_0b8a7f
 
 loc_0b8a78:
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0b8a7f:
     rts
@@ -1861,7 +1861,7 @@ loc_0b8be0:
     dey
     bmi loc_0b8c07
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     bra loc_0b8c06
 
 loc_0b8bf6:
@@ -1871,7 +1871,7 @@ loc_0b8bf6:
 
 loc_0b8bfb:
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     bra loc_0b8c06
 
 loc_0b8c04:
@@ -3873,14 +3873,14 @@ loc_0b9d67:
     lda $08,x
     bne loc_0b9d77
     lda #$0066
-    jsl sub_7f6e09
+    jsl QueueSound
     bra loc_0b9d83
 
 loc_0b9d77:
     cmp #$0002
     bne loc_0b9d83
     lda #$00ce
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0b9d83:
     lda #$000a
@@ -3906,7 +3906,7 @@ loc_0b9dae:
     bne loc_0b9dcc
     pha
     lda #$0066
-    jsl sub_7f6e09
+    jsl QueueSound
     pla
 
 loc_0b9dcc:
@@ -3921,7 +3921,7 @@ loc_0b9dd7:
 
 loc_0b9ddd:
     lda #$0067
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$ffff
     sta $7ef550
     rts
@@ -3939,7 +3939,7 @@ sub_0b9df7:
     lda $1be0
     bne loc_0b9e0e
     lda #$0042
-    jsl sub_7f6e09
+    jsl QueueSound
     inc $1be0
 
 loc_0b9e0e:
@@ -4700,7 +4700,7 @@ loc_0ba41a:
     lda $0b0000,x
     and #$00ff
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     inx
     rts
 
@@ -4837,7 +4837,7 @@ loc_0ba4f0:
     and #$1000
     beq loc_0ba50d
     lda #$0005
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$a6bb
     sta $f582
     lda $7ffff0
@@ -4855,7 +4855,7 @@ loc_0ba510:
     bit $02
     bpl loc_0ba523
     lda #$0049
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0ba523:
     lda $02
@@ -4923,7 +4923,7 @@ loc_0ba5a2:
 
 loc_0ba5b1:
     lda #$0005
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0ba5b8:
     stz $f584
@@ -5025,7 +5025,7 @@ loc_0ba687:
     lda $0b85ca,x
     and #$00ff
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     plx
     sec
     rts
@@ -5289,7 +5289,7 @@ loc_0ba9c5:
     dey
     bpl loc_0ba9ad
     lda #$005c
-    jsl sub_7f6e09
+    jsl QueueSound
     jmp sub_0ba9dd
 
 loc_0ba9d2:
@@ -6086,7 +6086,7 @@ loc_0bafcc:
     and #$9000
     beq loc_0baff6
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0004
     sta $1faa
     sep #$20
@@ -6127,7 +6127,7 @@ loc_0bb01f:
 
 loc_0bb029:
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0005
     sta $1faa
 
@@ -6188,7 +6188,7 @@ loc_0bb0b5:
     and #$4040
     beq loc_0bb0d2
     lda #$0008
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0007
     sta $1faa
     bra loc_0bb0e6
@@ -6198,7 +6198,7 @@ loc_0bb0d2:
     and #$9000
     beq loc_0bb0e6
     lda #$0048
-    jsl sub_7f6e09
+    jsl QueueSound
     ldx $1fa8
     dec $0a,x
 
@@ -6327,7 +6327,7 @@ loc_0bb1cb:
     cpx #$0006
     bcs loc_0bb1e2
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0bb1e2:
     pla
@@ -6369,7 +6369,7 @@ loc_0bb218:
     beq sub_0bb1f2
     bcc loc_0bb229
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0bb229:
     rts
@@ -6404,7 +6404,7 @@ loc_0bb294:
     cmp #$0050
     bne loc_0bb2bf
     lda #$001a
-    jsl sub_7f6e09
+    jsl QueueSound
     stz $10,x
     lda #$b2ae
     sta $04,x
@@ -6868,7 +6868,7 @@ loc_0bbbb4:
     inc $02,x
     jsr sub_0bbcbd
     lda #$0006
-    jsl sub_7f6e09
+    jsl QueueSound
     rts
 
 loc_0bbbcb:
@@ -6894,7 +6894,7 @@ loc_0bbbf2:
     lda #$0004
     sta $00,x
     lda #$0007
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0bbbfe:
     rts
@@ -6945,7 +6945,7 @@ loc_0bbc3a:
     rep #$20
 .a16
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0bbc43:
     rep #$20
@@ -8137,7 +8137,7 @@ loc_0bc54c:
     lda $0001,y
     and #$00ff
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     ply
     ldx $1e8e
     iny
@@ -8377,32 +8377,32 @@ sub_0bc6e4:
     tay
     sep #$20
 .a8
-    jsr sub_0bc711
+    jsr DivMod10
     sta $02
-    jsr sub_0bc711
+    jsr DivMod10
     asl a
     asl a
     asl a
     asl a
     ora $02
     sta $02
-    jsr sub_0bc711
+    jsr DivMod10
     sta $03
-    jsr sub_0bc711
+    jsr DivMod10
     asl a
     asl a
     asl a
     asl a
     ora $03
     sta $03
-    jsr sub_0bc711
+    jsr DivMod10
     sta $08
     stz $09
     rep #$20
 .a16
     rts
 
-sub_0bc711:
+DivMod10:    ; hardware divide of Y by 10 (WRDIVL/WRDIVB): Y quotient, A remainder (code)
 .a8
     sty WRDIVL
     lda #$0a
@@ -9429,7 +9429,7 @@ loc_0be730:
 
 loc_0be742:
     lda #$0020
-    jsl sub_7f6e09
+    jsl QueueSound
     jsr sub_0be9b7
     lda $1fd4
     cmp #$0003
@@ -9455,7 +9455,7 @@ loc_0be772:
 
 loc_0be77b:
     lda #$0070
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0be782:
     jmp sub_0bc818
@@ -9481,7 +9481,7 @@ loc_0be7ac:
 
 loc_0be7bf:
     lda #$0070
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0be7c6:
     jmp sub_0bc818
@@ -9538,7 +9538,7 @@ loc_0be824:
 
 loc_0be83f:
     lda #$0020
-    jsl sub_7f6e09
+    jsl QueueSound
     ldy #$0000
     ldx $1f9c,y
     lda #$0032
@@ -9549,7 +9549,7 @@ loc_0be83f:
 
 loc_0be859:
     lda #$002b
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0be860:
     jmp sub_0bc818
@@ -9816,7 +9816,7 @@ sub_0bea49:
 
 loc_0bea60:
     lda #$0018
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_0bea67:
     rts

@@ -230,7 +230,7 @@ loc_7f01ea:
     lda #$7e
     ldx #$f165
     ldy #$0080
-    jsl sub_7f0a22
+    jsl DmaToCgram
 
 loc_7f0214:
     rep #$20
@@ -354,7 +354,7 @@ loc_7f02ae:
 .a8
     lda #$70
     ldy #$0400
-    jsl sub_7f0a11
+    jsl DmaToVram
     pla
     sta $5e
     sta $00303a
@@ -421,7 +421,7 @@ sub_7f033d:
 .a8
     lda #$7e
     ldy #$0040
-    jsl sub_7f0a11
+    jsl DmaToVram
     ldx $1c19
     rep #$20
 .a16
@@ -435,7 +435,7 @@ sub_7f033d:
 .a8
     lda #$7e
     ldy #$0040
-    jsl sub_7f0a11
+    jsl DmaToVram
     ldx $1c1b
     rep #$20
 .a16
@@ -449,7 +449,7 @@ sub_7f033d:
 .a8
     lda #$7e
     ldy #$0040
-    jsl sub_7f0a11
+    jsl DmaToVram
     ldx $1c1d
     rep #$20
 .a16
@@ -463,13 +463,13 @@ sub_7f033d:
 .a8
     lda #$7e
     ldy #$0040
-    jsl sub_7f0a11
+    jsl DmaToVram
     ldx #$52e0
     stx VMADDL
     ldx #$d1c0
     lda #$7f
     ldy #$0100
-    jsl sub_7f0a11
+    jsl DmaToVram
     rts
 
 sub_7f03c2:
@@ -525,7 +525,7 @@ loc_7f0424:
     lda #$7e
     ldx #$e83f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
     lda $1b68
     cmp #$07
     bne loc_7f044f
@@ -547,7 +547,7 @@ loc_7f0451:
     lda #$7e
     ldx #$ea5f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
 
 loc_7f045d:
     rep #$20
@@ -562,7 +562,7 @@ loc_7f045d:
     lda #$7e
     ldx #$efe5
     ldy #$0200
-    jsl sub_7f0a22
+    jsl DmaToCgram
 
 loc_7f047a:
     rep #$20
@@ -577,7 +577,7 @@ loc_7f047a:
     ldx #$cc00
     lda #$7f
     ldy #$0740
-    jsl sub_7f0a11
+    jsl DmaToVram
 
 loc_7f0498:
     jsr sub_7f0861
@@ -623,8 +623,8 @@ loc_7f04f8:
     jsr sub_7f0e79
     lda $7f007c
     sta INIDISP
-    jsr sub_7f0f23
-    jsr sub_7f0e46
+    jsr SyncApuPorts
+    jsr ReadJoypads
     jsr sub_7f0516
     plp
     rts
@@ -757,14 +757,14 @@ loc_7f05d2:
     lda #$7e
     ldx #$e83f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
     bra loc_7f05ec
 
 loc_7f05e0:
     lda #$7e
     ldx #$ea5f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
 
 loc_7f05ec:
     jsr sub_7f0aaa
@@ -772,8 +772,8 @@ loc_7f05ec:
     jsr sub_7f0e79
     lda $7f007c
     sta INIDISP
-    jsr sub_7f0f23
-    jsr sub_7f0e46
+    jsr SyncApuPorts
+    jsr ReadJoypads
     ldx #$0080
     stx HTIMEL
     ldx #$00e1
@@ -841,13 +841,13 @@ loc_7f0641:
 .a8
     lda #$70
     ldy #$23f6
-    jsl sub_7f0a11
+    jsl DmaToVram
     pla
     sta $5e
     sta $00303a
     lda #$22
     sta $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -897,13 +897,13 @@ loc_7f069a:
 .a8
     lda #$70
     ldy #$23f6
-    jsl sub_7f0a11
+    jsl DmaToVram
     pla
     sta $5e
     sta $00303a
     lda #$24
     sta $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -953,7 +953,7 @@ loc_7f06ff:
 .a8
     lda #$70
     ldy #$0c14
-    jsl sub_7f0a11
+    jsl DmaToVram
     pla
     sta $5e
     sta $00303a
@@ -977,7 +977,7 @@ loc_7f0758:
 loc_7f075f:
     lda #$28
     sta $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1011,7 +1011,7 @@ loc_7f078f:
     ldx #$196f
     lda #$00
     ldy #$0080
-    jsl sub_7f0a11
+    jsl DmaToVram
 
 loc_7f07a8:
     sep #$20
@@ -1029,14 +1029,14 @@ loc_7f07bb:
     lda #$7e
     ldx #$e83f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
     bra loc_7f07d5
 
 loc_7f07c9:
     lda #$7e
     ldx #$ea5f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
 
 loc_7f07d5:
     lda #$00
@@ -1044,7 +1044,7 @@ loc_7f07d5:
     lda #$7e
     ldx #$efe5
     ldy #$0200
-    jsl sub_7f0a22
+    jsl DmaToCgram
     lda $5e
     pha
     lda $5e
@@ -1089,13 +1089,13 @@ loc_7f082f:
     stx $4c
     sty $4a
     jsr sub_7f0861
-    jsr sub_7f0e46
+    jsr ReadJoypads
     lda $1c51
     sta TM
     jsr sub_7f0e79
     jsr sub_7f0516
     stz $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1317,10 +1317,10 @@ sub_7f09f7:
 .a8
     lda #$7f
     ldy #$0800
-    jsl sub_7f0a11
+    jsl DmaToVram
     rts
 
-sub_7f0a11:
+DmaToVram:    ; DMA channel 0 to VRAM data $2118 (VMAIN $80, mode 1): A source bank, X address, Y size (code; executed in an idle run of the first battle)
     sta A1B0
     lda #$80
     sta VMAIN
@@ -1329,7 +1329,7 @@ sub_7f0a11:
     lda #$01
     bra loc_7f0a5f
 
-sub_7f0a22:
+DmaToCgram:    ; DMA channel 0 to palette data $2122 (mode 2): A source bank, X address, Y size (code; executed in an idle run of the first battle)
     sta A1B0
     lda #$22
     sta BBAD0
@@ -1350,7 +1350,7 @@ sub_7f0a2e:
     lda #$08
     bra loc_7f0a5f
 
-sub_7f0a4d:
+DmaToOam:    ; DMA channel 0 to sprite data $2104 from OAM address 0: A source bank, X address, Y size (code; executed in an idle run of the first battle)
     sta A1B0
     lda #$04
     sta BBAD0
@@ -1577,7 +1577,7 @@ loc_7f0c1b:
     ora $1a8a
     sta BG3SC
     stz $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1652,7 +1652,7 @@ loc_7f0c7d:
     sta MDMAEN
     inc $00
     inc $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1691,7 +1691,7 @@ loc_7f0ccf:
     lda #$01
     sta MDMAEN
     stz $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1754,7 +1754,7 @@ loc_7f0d7e:
     sep #$20
     rep #$10
 .i16
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1803,10 +1803,10 @@ loc_7f0de6:
     beq loc_7f0de6
     lda #$8f
     sta INIDISP
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     rep #$10
 .i16
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -1816,11 +1816,11 @@ loc_7f0de6:
 
 loc_7f0e09:
 .i8
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     rtl
 
 loc_7f0e0d:
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     rep #$10
 .i16
     rtl
@@ -1845,7 +1845,7 @@ loc_7f0e1a:
 loc_7f0e2f:
     rep #$10
 .i16
-    jsr sub_7f0e46
+    jsr ReadJoypads
     jsr sub_7f0e79
     stz HTIMEL
     lda #$16
@@ -1854,7 +1854,7 @@ loc_7f0e2f:
     stx VTIMEL
     rtl
 
-sub_7f0e46:
+ReadJoypads:    ; waits for auto-read; held pads to $1292/$1294, new presses to $1296/$1298 (watch: $1292-$1297 written at 7F:0E71, 0E6D, 0E5C with the masks of B and Y)
     php
     sep #$20
 
@@ -1981,7 +1981,7 @@ loc_7f0f0a:
     .db $8e,$2a,$16,$cd,$2a,$16,$8c,$2a,$16,$f0,$0c,$30,$06,$38,$ed,$2a
     .db $16,$80,$04,$18,$6d,$2a,$16,$60
 
-sub_7f0f23:
+SyncApuPorts:    ; per-tick exchange with the SPC700: pops the sound ring $1cf6 into APUIO3/APUIO0 (watch: $1d1a = $26 written at 7F:0FB8 after B queued a shot sound)
 .i8
     php
     sep #$30
@@ -2124,10 +2124,10 @@ loc_7f101c:
     lda #$7e
     ldx #$e83f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
     jsr sub_7f0fff
-    jsr sub_7f0f23
-    jsr sub_7f0e46
+    jsr SyncApuPorts
+    jsr ReadJoypads
     rtl
 
 loc_7f1038:
@@ -2167,7 +2167,7 @@ loc_7f103f:
     lda #$01
     sta MDMAEN
     stz $00
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -2193,7 +2193,7 @@ loc_7f109f:
     lda #$8f
     sta INIDISP
     stz $00
-    jsr sub_7f0e46
+    jsr ReadJoypads
     rep #$20
 .a16
     lda $1b96
@@ -2234,18 +2234,18 @@ loc_7f10ea:
     lda #$7e
     ldx #$e83f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
     bra loc_7f1104
 
 loc_7f10f8:
     lda #$7e
     ldx #$ea5f
     ldy #$0220
-    jsl sub_7f0a4d
+    jsl DmaToOam
 
 loc_7f1104:
     jsr sub_7f0861
-    jsr sub_7f0f23
+    jsr SyncApuPorts
     lda #$16
     sta $1947
     ldx $1b4b
@@ -4057,7 +4057,7 @@ sub_7f1d58:
     ora #$18
     sta $5e
     sta $00303a
-    jsr sub_7f1d7e
+    jsr Atan2
     rep #$20
 .a16
     sta $50
@@ -4073,7 +4073,7 @@ sub_7f1d58:
 .a8
     rtl
 
-sub_7f1d7e:
+Atan2:    ; 16-bit arctangent of ($02,$08), $4000 = 90 degrees: divides with sub_7f1ca0, looks up the table at $0dfc74, fixes the quadrant (code)
     phx
     phy
     php
@@ -4213,7 +4213,7 @@ loc_7f1f0b:
     cmp $0a
     bne loc_7f1f2c
     ldy $04
-    jsl sub_7f249f
+    jsl DistanceXZ
 .a8
     rep #$20
 .a16
@@ -4250,7 +4250,7 @@ loc_7f1f43:
     and #$0004
     beq loc_7f1f65
     ldy $04
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     lda $12de
     cmp $3a
@@ -4285,7 +4285,7 @@ loc_7f1f82:
     cmp $0a
     bne loc_7f1f9f
     ldy $04
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     lda $12de
     cmp $3a
@@ -4312,7 +4312,7 @@ loc_7f1fad:
     and #$0004
     beq loc_7f1fcb
     ldy $04
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     lda $12de
     cmp $3a
@@ -4352,7 +4352,7 @@ loc_7f1ffa:
 
 loc_7f2005:
     ldy $04
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     lda $12de
     cmp $3a
@@ -4394,7 +4394,7 @@ loc_7f2020:
 loc_7f2051:
     phx
     phy
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
 .a16
     lda $12de
@@ -4504,7 +4504,7 @@ loc_7f20fa:
 loc_7f20fe:
     phx
     phy
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     lda $02
     clc
@@ -4569,7 +4569,7 @@ sub_7f21a5:
 .a8
     phx
     phy
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
 .a16
     lda $12de
@@ -4948,7 +4948,7 @@ loc_7f246a:
     .db $02,$8d,$de,$12,$a5,$0a,$38,$f5,$0e,$85,$08,$30,$06,$18,$6d,$de
     .db $12,$80,$06,$38,$ad,$de,$12,$e5,$08,$8d,$de,$12,$e2,$20,$6b
 
-sub_7f249f:
+DistanceXZ:    ; approximate distance between objects X and Y in the x/z plane, left in $12de (watch: $12de written at 7F:24D5 and 7F:24FD)
     rep #$20
 .a16
     lda $000c,y
@@ -7870,7 +7870,7 @@ loc_7f3a43:
     ply
     rtl
 
-sub_7f3a4e:
+Rotate2D:    ; rotates ($08,$97) by the angle in A, 256 = full turn, with the sin/cos tables at $7f3d92 and $7f3dd2 and the hardware multiplier (code)
     phx
     phy
     php
@@ -8843,7 +8843,7 @@ loc_7f4167:
     sta $e4
     lda $000012,x
     beq loc_7f417c
-    jsl sub_7f3a4e
+    jsl Rotate2D
 
 loc_7f417c:
     lda $04
@@ -8965,7 +8965,7 @@ loc_7f421d:
     sta $e4
     lda $000012,x
     beq loc_7f4235
-    jsl sub_7f3a4e
+    jsl Rotate2D
 
 loc_7f4235:
     rep #$20
@@ -9508,7 +9508,7 @@ loc_7f4573:
     sta $e4
     lda $0012,y
     beq loc_7f4588
-    jsl sub_7f3a4e
+    jsl Rotate2D
 
 loc_7f4588:
     lda $04
@@ -9630,7 +9630,7 @@ loc_7f4625:
     sta $e4
     lda $0012,y
     beq loc_7f463e
-    jsl sub_7f3a4e
+    jsl Rotate2D
 
 loc_7f463e:
     rep #$20
@@ -11507,7 +11507,7 @@ loc_7f5b1f:
     sta $0008,y
     sta $0048,y
     lda #$008b
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_7f5b55:
     rts
@@ -12017,7 +12017,7 @@ loc_7f5f23:
     sta $db4b
     rts
 
-sub_7f5f39:
+DamageCorneria:    ; a pending hit ($db4b) lowers Corneria's health $db47; damage $db49 = 100 - health; at 100 the campaign-lost flags are set (code; $db49 is the map HUD's damage %; entered every battle frame in coverage)
     lda $1b8a
     bit #$0200
     bne loc_7f5f46
@@ -13684,7 +13684,7 @@ sub_7f6df8:
     rtl
     .db $8d,$e6,$1c,$6b
 
-sub_7f6e09:
+QueueSound:    ; appends a sound word to the ring at $1cf6 (index $1d16, 16 entries), consumed by SyncApuPorts; 138 callers (watch: Y held writes $001a to $1cfc and $1d16 = 8 at 7F:6E0D, 7F:6E17)
 .a16
     phx
     ldx $1d16

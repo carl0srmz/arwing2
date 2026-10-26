@@ -1149,7 +1149,7 @@ loc_0db7c0:
     lda $e4
     sta $97
     lda $12,x
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -2448,7 +2448,7 @@ loc_0dcc3b:
     rep #$20
 .a16
     lda #$00b1
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2459,7 +2459,7 @@ loc_0dcc49:
     rep #$20
 .a16
     lda #$00cd
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2470,7 +2470,7 @@ loc_0dcc57:
     rep #$20
 .a16
     lda #$00b8
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2481,7 +2481,7 @@ loc_0dcc65:
     rep #$20
 .a16
     lda #$005b
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2497,7 +2497,7 @@ loc_0dcc73:
     ora #$8000
 
 loc_0dcc81:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2513,7 +2513,7 @@ loc_0dcc89:
     ora #$8000
 
 loc_0dcc97:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2529,7 +2529,7 @@ loc_0dcc9f:
     ora #$8000
 
 loc_0dccad:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2561,7 +2561,7 @@ loc_0dccce:
     rep #$20
 .a16
     lda #$005a
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2573,7 +2573,7 @@ loc_0dccdc:
 .a16
     lda #$00fa
     sta $1ce1
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     plp
@@ -2585,7 +2585,7 @@ loc_0dcced:
 .a16
     lda #$00f9
     sta $1ce1
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     lda $1ce1
@@ -4986,7 +4986,7 @@ loc_0df217:
     rep #$20
 .a16
     lda #$00f4
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     jsl sub_03f26a
@@ -5614,7 +5614,7 @@ loc_0df693:
     rep #$20
 .a16
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     sec
