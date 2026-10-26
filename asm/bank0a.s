@@ -43,7 +43,7 @@ loc_7f7e1e:
     stz $b26d
     stz $b26e
 
-loc_7f7e53:
+RunObjectScript:    ; object script interpreter, the per-tick routine of most objects (the 24-bit routine pointer at object +$19): opcode from [$f9], the pointer in object +$2b with bank $44, jumps through the table at $7f7ee8 (code)
     lda $5e
     ora #$18
     sta $5e
@@ -2183,7 +2183,7 @@ loc_7f955e:
     sta $002b,x
     sep #$20
 .a8
-    jmp loc_7f7e53
+    jmp RunObjectScript
     inc $6a1d
     rep #$20
 .a16
@@ -2411,7 +2411,7 @@ loc_7f96db:
     sta $2b,x
     sep #$20
 .a8
-    jmp loc_7f7e53
+    jmp RunObjectScript
     rep #$20
 .a16
     lda $1cde,x
@@ -3323,7 +3323,7 @@ loc_7f9d68:
     sta $2b,x
     sep #$20
 .a8
-    jmp loc_7f7e53
+    jmp RunObjectScript
 
 loc_7f9d88:
     plx
@@ -4122,7 +4122,7 @@ loc_7fa2e1:
     sta $2b,x
     sep #$20
 .a8
-    jmp loc_7f7e53
+    jmp RunObjectScript
     lda #$01
     sta $b272
     jmp loc_7fcae8
@@ -5006,10 +5006,10 @@ loc_7fa9eb:
     jsr sub_7fc720
     clc
     adc $6c33,y
-    bcc loc_7faa0f
+    bcc AddScoreStore
     lda #$ffff
 
-loc_7faa0f:
+AddScoreStore:    ; tail of the script opcode that adds a kill's points to the pilot's score $6c33,y, saturating at $ffff (watch: written 44, 100, 144, 200, 244 at 7F:AA0F on the five kills of the first battle)
     sta $6c33,y
     ply
     sep #$20
@@ -7274,7 +7274,7 @@ loc_7fbd79:
 
 loc_7fbd7b:
     lda $0012,y
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -7543,7 +7543,7 @@ loc_7fbf63:
 .a16
     jsr sub_7fc720
     sta $1ce1
-    jsl sub_7f6e09
+    jsl QueueSound
     jmp loc_7fcabe
 .a8
     lda $5e
@@ -8206,7 +8206,7 @@ loc_7fc499:
 .a8
     lda #$7f
     sta $6a64,y
-    brl loc_7f7e53
+    brl RunObjectScript
     .db $5c,$77,$a0,$03,$b5,$22,$09,$02,$95,$22,$6b
 
 sub_7fc4bc:
@@ -9070,7 +9070,7 @@ loc_0acdd3:
     rep #$20
 .a16
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rep #$20
@@ -9102,7 +9102,7 @@ loc_0ace29:
     rep #$20
 .a16
     lda #$0047
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rep #$20

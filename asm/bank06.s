@@ -17,7 +17,7 @@ sub_068007:
 loc_06800c:
     rep #$20
 .a16
-    jsl sub_7f249f
+    jsl DistanceXZ
 .a8
     rep #$20
 .a16
@@ -31,7 +31,7 @@ loc_06800c:
 loc_068022:
     rep #$20
 .a16
-    jsl sub_7f249f
+    jsl DistanceXZ
 .a8
     rep #$20
 .a16
@@ -46,7 +46,7 @@ loc_068038:
     rep #$20
 .a16
     lda #$0070
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_06805d
@@ -55,7 +55,7 @@ loc_068045:
     rep #$20
 .a16
     lda #$3070
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_06805d
@@ -64,7 +64,7 @@ loc_068052:
     rep #$20
 .a16
     lda #$6070
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_06805d:
@@ -581,7 +581,7 @@ loc_06850d:
     rep #$20
 .a16
     lda $1ce3
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_068525:
@@ -715,7 +715,7 @@ loc_06860b:
 .a8
     plx
     jsl sub_069586
-    jmp loc_069c27
+    jmp PlayerFlightTick
     .db $b5,$24,$29,$fd,$95,$24,$b4,$2b,$b9,$7d,$6b,$29,$a7,$99,$7d,$6b
     .db $ad,$4d,$1b,$29,$f8,$09,$01,$8d,$4d,$1b,$c2,$20,$ad,$0f,$1e,$e2
     .db $20,$d0,$04,$5c,$60,$86,$06,$ad,$13,$1e,$c9,$04,$f0,$0a,$ad,$4d
@@ -749,8 +749,8 @@ loc_06877f:
     jsl sub_069236
     jsl sub_068fe2
     jsl sub_07b038
-    jsl sub_07d6cc
-    jsl sub_07dab2
+    jsl ShipWeapons
+    jsl ChargeShot
     jml loc_069dba
     ldy $2b,x
     phy
@@ -803,7 +803,7 @@ loc_06877f:
     lda $23,x
     ora #$08
     sta $23,x
-    jsl sub_069457
+    jsl ReadShipInput
     jsl sub_069075
     jsl sub_06e2ee
     jsr sub_069a26
@@ -895,7 +895,7 @@ loc_068ff5:
     ora #$8000
 
 loc_069018:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_069072
@@ -912,7 +912,7 @@ loc_069020:
     ora #$8000
 
 loc_069033:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     lda $6b9b,y
@@ -944,7 +944,7 @@ loc_069056:
     ora #$8000
 
 loc_06906c:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_069072:
@@ -1015,7 +1015,7 @@ loc_0690d2:
     ply
     rtl
 
-sub_0690d4:
+GetPilotId:    ; X = the pilot index 0-5 from $6bff,y (0 if out of range), the index of per-pilot tables such as the maximum shield at $06a46e (code; $1dd5 = $20 for pilot 0)
     php
     rep #$30
 .a16
@@ -1038,7 +1038,7 @@ sub_0690ec:
     php
     rep #$30
 .a16
-    jsl sub_0690d4
+    jsl GetPilotId
     txa
     asl a
     tax
@@ -1050,7 +1050,7 @@ sub_0690f8:
     php
     rep #$30
 .a16
-    jsl sub_0690d4
+    jsl GetPilotId
     txa
     and #$fffe
     tax
@@ -1062,7 +1062,7 @@ sub_069106:
     php
     rep #$30
 .a16
-    jsl sub_0690d4
+    jsl GetPilotId
     txa
     lsr a
     tax
@@ -1313,7 +1313,7 @@ loc_06930e:
     lda #$00
     sta $03
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06dbc0,x
     sta $02
     plx
@@ -1508,7 +1508,7 @@ loc_06944e:
 loc_069456:
     rts
 
-sub_069457:
+ReadShipInput:    ; the ship's pad: pad 1 or 2 by object +$23 bit $40, filtered, plus injected buttons; new presses in $1936, held in $1938 (watch: written at 06:9463 and 06:9524/952D while B and Y were pressed)
     phy
     php
     sep #$20
@@ -1810,7 +1810,7 @@ loc_0695df:
     .db $00,$96,$06,$22,$aa,$2b,$7f,$22,$d2,$2b,$7f,$b9,$20,$00,$29,$f7
     .db $99,$20,$00,$28,$6b
 
-sub_0696d7:
+PilotPosToObject:    ; copies the pilot record's position words ($6bed,y $6bef,y $6bf1,y) to the object's x/y/z at +$0c/+$0e/+$10 (code; not executed in the recorded runs)
     phy
     php
     rep #$30
@@ -1826,7 +1826,7 @@ sub_0696d7:
     ply
     rts
 
-sub_0696ef:
+ObjectPosToPilot:    ; the reverse of PilotPosToObject (code; not executed in the recorded runs)
 .a8
     phy
     php
@@ -1843,7 +1843,7 @@ sub_0696ef:
     ply
     rts
 
-loc_069707:
+ApplyShipDamage:    ; hit handler, stored in the pilot record at ship setup (bank06.s:651): subtracts $cf2f from the shield (watch: $B228 written at 06:982F on the first hit of the first battle; coverage: entered only in a run that took a hit)
 .a8
     phx
     phy
@@ -1994,7 +1994,7 @@ loc_0697fc:
     ora #$8000
 
 loc_069809:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_069824
@@ -2008,7 +2008,7 @@ loc_069811:
     ora #$8000
 
 loc_06981e:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_069824:
@@ -2398,16 +2398,16 @@ loc_069c22:
     plb
     rtl
 
-loc_069c27:
+PlayerFlightTick:    ; per-tick routine of the player ship in flight (the player object's routine pointer at +$19 once the pad flies the ship): loads the pilot's limits, copies the pilot record to $1dd1-$1dd4 (watch: $1dd1 written at 06:9CD2)
     ldy $2b,x
     sep #$20
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06a474,x
     sta $1dd6
     plx
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06a46e,x
     sta $1dd5
     plx
@@ -2450,7 +2450,7 @@ loc_069c50:
     ora #$8000
 
 loc_069c92:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_069cad
@@ -2464,7 +2464,7 @@ loc_069c9a:
     ora #$8000
 
 loc_069ca7:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_069cad:
@@ -2655,7 +2655,7 @@ loc_069e86:
     ora #$8000
 
 loc_069e93:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     lda #$02
@@ -3473,7 +3473,7 @@ loc_06a457:
     .db $03,$03,$03,$03,$20,$20,$28,$28,$18,$18,$19,$19,$23,$23,$0a,$0a
     .db $60
 
-sub_06a47b:
+ShipBoost:    ; Y held: sets boost bit $40 of $6b77,y, queues sound $1a (watch: $B19F becomes $41 at 06:A4AD; coverage: entered only in the Y run)
     phy
     php
     sep #$20
@@ -3493,7 +3493,7 @@ sub_06a47b:
     ora #$8000
 
 loc_06a4a0:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_06a4a6:
@@ -3515,7 +3515,7 @@ loc_06a4b8:
     ply
     rtl
 
-sub_06a4c5:
+ShipBrake:    ; A held: sets brake bit $20 of $6b77,y, queues sound $1b (watch: $B19F becomes $21 at 06:A50F; coverage: entered only in the A run)
     phy
     php
     sep #$20
@@ -3547,7 +3547,7 @@ loc_06a4ec:
     ora #$8000
 
 loc_06a4fe:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_06a504:
@@ -3565,7 +3565,7 @@ loc_06a512:
     sta $6b79,y
     jmp loc_06a4b8
 
-sub_06a51d:
+ShipCruise:    ; neither boost nor brake: clears both bits of $6b77,y (watch: $B19F back to $01 at 06:A532 every tick)
     phy
     php
     sep #$20
@@ -3654,7 +3654,7 @@ loc_06a5bd:
 .a8
     tyx
     ldy $14d6
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
 .a16
     lda $12de
@@ -3804,7 +3804,7 @@ loc_06a6c3:
     jml loc_06a74e
 
 loc_06a6cc:
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     lda $12de
     cmp #$01f4
@@ -3975,7 +3975,7 @@ loc_06a7e0:
 
 loc_06a7fb:
     ora #$2000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_06a834
@@ -3990,7 +3990,7 @@ loc_06a806:
 
 loc_06a813:
     ora #$1000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_06a834
@@ -4005,7 +4005,7 @@ loc_06a81e:
 
 loc_06a82b:
     ora #$0000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_06a834:
@@ -4322,7 +4322,7 @@ sub_06ab05:
     ora #$8000
 
 loc_06ab1b:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     jsl sub_7f7bd0
@@ -4533,7 +4533,7 @@ loc_06d489:
     lda #$00
     sta $97
     lda $6a79,y
-    jsl sub_7f3a4e
+    jsl Rotate2D
     rep #$20
 .a16
     lda $0a
@@ -4723,7 +4723,7 @@ loc_06d87d:
     sep #$20
 .a8
     ldy $2b,x
-    jsr sub_0696d7
+    jsr PilotPosToObject
     lda $1e13
     cmp #$01
     beq loc_06d8ae
@@ -4792,7 +4792,7 @@ loc_06d908:
 .a8
     lda $1cea,x
     sta $1d71
-    jsr sub_0696ef
+    jsr ObjectPosToPilot
     sep #$20
     lda $1955
     bit #$04
@@ -5058,9 +5058,9 @@ sub_06e258:
     php
     sep #$20
     rep #$10
-    jsr sub_06e7ff
+    jsr BarrelRollInput
     jsr sub_06f2f7
-    jsr sub_06f010
+    jsr UpdateShipSpeed
     jsl sub_07dd6f
     jsr sub_06f05d
     jsr sub_06ecb0
@@ -5154,7 +5154,7 @@ sub_06e2ee:
     rep #$20
 .a16
     lda #$0036
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_06e329:
@@ -5645,7 +5645,7 @@ loc_06e73f:
     asl a
     sta $02
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06e7f9,x
     sta $1dae
     plx
@@ -5722,7 +5722,7 @@ sub_06e779:
     .db $00,$03,$80,$02,$c0,$03,$c0,$03,$c0,$03,$c0,$03,$c0,$03,$c0,$03
     .db $28,$28,$28,$28,$28,$28
 
-sub_06e7ff:
+BarrelRollInput:    ; double tap of L or R within 7 ticks starts the roll: counter $6add,y = $20 or $e0, then stepped to 0 by 2 per tick (watch: $B105 = $20 at 06:E882, counting down at 06:E8E5; coverage: roll branch only in the double-tap run)
     phy
     php
     sep #$20
@@ -5891,7 +5891,7 @@ loc_06e919:
     sep #$20
 .a8
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06e9ea,x
     sta $09
     plx
@@ -5899,7 +5899,7 @@ loc_06e919:
 
 loc_06e930:
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06e9f0,x
     sta $09
     plx
@@ -6686,7 +6686,7 @@ loc_06f00d:
     ply
     rts
 
-sub_06f010:
+UpdateShipSpeed:    ; boost (Y held), brake (A held) or cruise each tick, only while targets remain ($d7f4) (code; see ShipBoost, ShipBrake, ShipCruise)
     php
     sep #$20
     rep #$10
@@ -6714,14 +6714,14 @@ loc_06f033:
     lda $1939
     bit #$40
     beq loc_06f045
-    jsl sub_06a47b
+    jsl ShipBoost
     bra loc_06f05b
 
 loc_06f045:
     lda $1938
     bit #$80
     beq loc_06f052
-    jsl sub_06a4c5
+    jsl ShipBrake
     bra loc_06f05b
 
 loc_06f052:
@@ -6729,7 +6729,7 @@ loc_06f052:
     sta $6b78,y
 
 loc_06f057:
-    jsl sub_06a51d
+    jsl ShipCruise
 
 loc_06f05b:
     plp
@@ -6764,7 +6764,7 @@ loc_06f082:
 
 loc_06f08f:
     phx
-    jsl sub_0690d4
+    jsl GetPilotId
     lda $06dbc0,x
     sta $1dc1
     lda $06dbc6,x
@@ -7134,7 +7134,7 @@ loc_06f362:
 loc_06f3a4:
     sep #$20
     rep #$10
-    jsl sub_06a51d
+    jsl ShipCruise
     rep #$20
 .a16
     lda #$bc9c
@@ -7241,7 +7241,7 @@ loc_06f45b:
     ora #$8000
 
 loc_06f468:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_06f483
@@ -7255,7 +7255,7 @@ loc_06f470:
     ora #$8000
 
 loc_06f47d:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_06f483:
@@ -7748,7 +7748,7 @@ loc_06f7ee:
     ora #$8000
 
 loc_06f7fc:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     jsr sub_06f825

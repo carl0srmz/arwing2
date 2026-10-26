@@ -4814,7 +4814,7 @@ loc_07a62c:
     rep #$20
 .a16
     lda #$003b
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_07a63f:
@@ -5264,7 +5264,7 @@ loc_07a99f:
     lda $e4
     sta $97
     lda $0012,y
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -6112,13 +6112,13 @@ loc_07af8c:
 
 loc_07af91:
     lda $6c38,y
-    jsr sub_07af9b
+    jsr LowShieldAlert
     plp
     ply
     plx
     rtl
 
-sub_07af9b:
+LowShieldAlert:    ; shield fell below the saved $6c0a,y and is under 13: queues sound $16 (5-12) or $17 (under 5); then saves the shield to $6c0a,y, the $07:AFE3 copy (code)
     php
     sep #$20
     rep #$10
@@ -6141,7 +6141,7 @@ sub_07af9b:
     ora #$8000
 
 loc_07afc5:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_07afe0
@@ -6155,7 +6155,7 @@ loc_07afcd:
     ora #$8000
 
 loc_07afda:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_07afe0:
@@ -6391,7 +6391,7 @@ loc_07b14d:
     sta $10,x
     phy
     ldy #$033f
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
     ply
     lda $12de
@@ -6506,7 +6506,7 @@ loc_07b222:
     sep #$20
 .a8
     ldy #$033f
-    jsl sub_7f249f
+    jsl DistanceXZ
     rep #$20
 .a16
     lda $12de
@@ -8422,7 +8422,7 @@ loc_07d08c:
     rep #$20
 .a16
     lda #$006d
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_07d0c2:
@@ -9047,7 +9047,7 @@ sub_07d49a:
     rts
     .incbin "data/03d4c3-03d6cc.bin"
 
-sub_07d6cc:
+ShipWeapons:    ; weapon buttons each tick: X press ($1936 bit $40) calls FireSpecialItem, the B paths reach FireLaser (code; coverage: FireLaser only in B runs, FireSpecialItem only in the X run)
     phx
     phy
     php
@@ -9197,7 +9197,7 @@ loc_07d7c3:
     bit #$40
     beq loc_07d7e4
     phy
-    jsr sub_07d8a3
+    jsr FireSpecialItem
     ply
     lda $6b61,y
     and #$f0
@@ -9300,7 +9300,7 @@ loc_07d877:
     bne loc_07d896
     bit #$f0
     beq loc_07d89f
-    jsr sub_07d988
+    jsr FireLaser
     bcc loc_07d89f
     lda $6b60,y
     and #$f0
@@ -9325,7 +9325,7 @@ loc_07d89f:
     plx
     rtl
 
-sub_07d8a3:
+FireSpecialItem:    ; X press: computes the launch position from the ship's angles and calls ConsumeItem (coverage: entered only in the X run; the HUD bomb count drops 3 to 2)
     phx
     phy
     php
@@ -9387,7 +9387,7 @@ loc_07d8f4:
 
 loc_07d8f6:
     lda $12,x
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -9438,7 +9438,7 @@ loc_07d8f6:
     sta $14b2
     lda #$00
     sta $14b4
-    jsl sub_07dc8b
+    jsl ConsumeItem
     bcs loc_07d96a
     jml loc_07d984
 
@@ -9463,7 +9463,7 @@ loc_07d984:
     plx
     rts
 
-sub_07d988:
+FireLaser:    ; fires the laser: picks the shot by weapon level $6c06,y and spawns it with SpawnLaserShot (coverage: entered only in the runs that pressed B)
     phx
     phy
     php
@@ -9498,7 +9498,7 @@ loc_07d9ba:
     jml loc_07d9d1
 
 loc_07d9c2:
-    jsr sub_07da1e
+    jsr SpawnLaserShot
     cpy #$0000
     bne loc_07d9ce
     jml loc_07da19
@@ -9533,7 +9533,7 @@ loc_07d9e0:
     sta $10,x
     sep #$20
 .a8
-    jsr sub_07da1e
+    jsr SpawnLaserShot
     rep #$20
 .a16
     lda $1dba
@@ -9559,7 +9559,7 @@ loc_07da19:
     clc
     rts
 
-sub_07da1e:
+SpawnLaserShot:    ; calls sub_03a89c with 6, 8 or $0a by the weapon level $1db6 to create the shot object (coverage: only in the B runs)
     lda #$00
     sta $14b7
     lda #$00
@@ -9638,7 +9638,7 @@ loc_07dab0:
     clc
     rts
 
-sub_07dab2:
+ChargeShot:    ; hold-B charge: level $6c08,y rises to the maximum $1dd6; at full charge spawns kind $10 via sub_03a89c (watch: $B230 climbs written at 07:DC77 while B is held; coverage: loc_07db19 only in the hold-B run)
     phy
     php
     sep #$20
@@ -9766,7 +9766,7 @@ loc_07db8f:
     ora #$8000
 
 loc_07dba5:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_07dbab:
@@ -9835,7 +9835,7 @@ loc_07dc03:
     ora #$8000
 
 loc_07dc27:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_07dc2d:
@@ -9873,7 +9873,7 @@ loc_07dc2d:
     ora #$8000
 
 loc_07dc69:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rep #$20
@@ -9892,7 +9892,7 @@ loc_07dc7c:
     rtl
     .db $80,$01,$80,$01,$80,$01,$80,$01,$80,$01,$80,$01
 
-sub_07dc8b:
+ConsumeItem:    ; carry set when an item was used: checks count $6c04,y and type $6c05,y, then decrements the count (watch: $B22C 3 -> 2 written at 07:DD64 in this routine when X is pressed)
     phx
     phy
     rep #$20
@@ -10345,7 +10345,7 @@ loc_07df7e:
     lda $e4
     sta $97
     lda $12,x
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a
@@ -10458,7 +10458,7 @@ loc_07e02f:
 
 loc_07e04c:
     ora #$0000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rts
@@ -10473,7 +10473,7 @@ loc_07e056:
 
 loc_07e063:
     ora #$1000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rts
@@ -10488,7 +10488,7 @@ loc_07e06d:
 
 loc_07e07a:
     ora #$2000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rts
@@ -10503,7 +10503,7 @@ loc_07e084:
 
 loc_07e091:
     ora #$0000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rts
@@ -10518,7 +10518,7 @@ loc_07e09b:
 
 loc_07e0a8:
     ora #$1000
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     rts
@@ -10852,7 +10852,7 @@ loc_07e2be:
     ora #$8000
 
 loc_07e2d3:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_07e2ee
@@ -10866,7 +10866,7 @@ loc_07e2db:
     ora #$8000
 
 loc_07e2e8:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_07e2ee:
@@ -12642,7 +12642,7 @@ loc_07f0fb:
 
 loc_07f105:
     ldy $12c3
-    jsl sub_7f249f
+    jsl DistanceXZ
     lda $1b4d
     and #$07
     cmp #$00
@@ -13258,7 +13258,7 @@ loc_07f681:
 
 loc_07f683:
     lda $0012,y
-    jsl sub_7f3a4e
+    jsl Rotate2D
     lda $04
     sta $02
     lda $0a

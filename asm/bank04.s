@@ -211,7 +211,7 @@ loc_048176:
     ldx #$3b50
     lda #$70
     ldy #$0800
-    jsl sub_7f0a11
+    jsl DmaToVram
     jsl sub_0ba81e
     rts
 
@@ -2229,7 +2229,7 @@ loc_0491ff:
 
 loc_049206:
     lda #$000f
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$1000
     tsb $1b92
     lda #$8828
@@ -3217,7 +3217,7 @@ loc_049937:
     ora #$8000
 
 loc_04994b:
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_049951:
@@ -5036,7 +5036,7 @@ loc_04a8bb:
     lda $d9a8
     sta $d9aa
     lda #$0068
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04a8da:
     lda $1bad
@@ -5248,7 +5248,7 @@ loc_04aa99:
     lda #$0002
     sta $d97c
     lda #$005c
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04aaa6:
     rts
@@ -5961,7 +5961,7 @@ loc_04af1b:
     rep #$20
 .a16
     lda #$0060
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     brl loc_04b121
@@ -6059,7 +6059,7 @@ loc_04affe:
     lda #$0001
     sta $1b6a
     lda #$0060
-    jsl sub_7f6e09
+    jsl QueueSound
     brl loc_04b121
 
 loc_04b026:
@@ -6072,7 +6072,7 @@ loc_04b026:
     rep #$20
 .a16
     lda #$0060
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     brl loc_04b121
@@ -6084,7 +6084,7 @@ loc_04b042:
     rep #$20
 .a16
     lda #$0060
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     lda #$02
@@ -6118,7 +6118,7 @@ loc_04b07c:
     rep #$20
 .a16
     lda #$0060
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 .a8
     bra loc_04b0d3
@@ -6156,12 +6156,12 @@ loc_04b0c1:
     rep #$20
 .a16
     lda #$006e
-    jsl sub_7f6e09
+    jsl QueueSound
     sep #$20
 
 loc_04b0d3:
 .a8
-    jsr sub_04b259
+    jsr InitBattleTargets
     rep #$20
 .a16
     lda $daf3
@@ -6216,13 +6216,13 @@ loc_04b121:
     sep #$20
 .a8
     jsl sub_03dfa0
-    bra loc_04b154
+    bra MapExit
 
 loc_04b14d:
     ldx #$003c
     jsl sub_03e017
 
-loc_04b154:
+MapExit:    ; common exit of the map: the next mode $1b6a becomes $1b68 and the map's flags are cleared (watch: $1b68 = 1 written at 04:B15D on the launch to the first battle)
     jsl sub_7f1737
     rep #$20
 .a16
@@ -6354,7 +6354,7 @@ sub_04b23b:
     plx
     rts
 
-sub_04b259:
+InitBattleTargets:    ; start of a battle: stage numbers of the selected map unit to $1bb5/$1ba5/$1ba7, targets left $d7f4 from $d7c2 (watch: $d7f4 = 5 written at 04:B2A1 on the launch to the first battle)
     ldy $e097
     lda $0032,y
     sta $1bb5
@@ -6475,7 +6475,7 @@ loc_04b306:
     lda #$0200
     tsb $1b8a
     lda #$006f
-    jsl sub_7f6e09
+    jsl QueueSound
     lda $1b8a
     bit #$0002
     bne loc_04b35e
@@ -6816,7 +6816,7 @@ sub_04b5fb:
     lda $1b88
     bit #$0120
     bne loc_04b617
-    jsr sub_04b629
+    jsr MapTick
     lda $1b94
     bit #$ffff
     beq loc_04b611
@@ -6835,7 +6835,7 @@ tbl_04b618:
 loc_04b628:
     rts
 
-sub_04b629:
+MapTick:    ; one frame of the map: cursor, unit selection, launch, clock and enemy units (code; coverage: every frame of the map legs, never in a battle)
     jsr sub_04b961
     jsr sub_04b8a0
     lda #$0001
@@ -6852,8 +6852,8 @@ sub_04b629:
     trb $da8b
     lda #$0001
     trb $da8d
-    jsr sub_04f07a
-    jsr sub_04f19f
+    jsr UpdateMapCursor
+    jsr SelectMapUnit
     bra loc_04b661
 
 loc_04b65e:
@@ -6861,7 +6861,7 @@ loc_04b65e:
 
 loc_04b661:
     jsr sub_04b7a1
-    jsr sub_04b962
+    jsr AdvanceMapClock
     lda $1b8c
     bit #$0004
     bne loc_04b683
@@ -6977,7 +6977,7 @@ loc_04b729:
 loc_04b731:
     lda $7f6d30,x
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04b73c:
     lda #$ffff
@@ -7019,7 +7019,7 @@ loc_04b76f:
     lda $04b78c,x
     and #$00ff
     and #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04b787:
     plp
@@ -7095,7 +7095,7 @@ loc_04b7fc:
     lda $db55
     sta $db53
     lda #$000c
-    jsl sub_7f6e09
+    jsl QueueSound
     lda $da8b
     bit #$0200
     beq loc_04b840
@@ -7118,7 +7118,7 @@ loc_04b845:
     bne loc_04b85f
     jsr sub_04b887
     lda #$0008
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04b85f:
     lda $1296
@@ -7171,7 +7171,7 @@ sub_04b8a0:
     bit #$1000
     beq loc_04b8cd
     lda #$000e
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0016
     sta $d9fd
 
@@ -7206,7 +7206,7 @@ loc_04b8e1:
     lda #$0026
     sta $da7f
     lda #$002f
-    jsl sub_7f6e09
+    jsl QueueSound
     bra loc_04b8da
 
 loc_04b911:
@@ -7257,7 +7257,7 @@ sub_04b961:
 .a16
     rts
 
-sub_04b962:
+AdvanceMapClock:    ; adds the frame time to $da5f and every 60 counts increments the map TIME $da5b, capped at 999 (watch: $da5b 6 to 11 written at 04:B99F, one per 60 frames of a flight)
     lda #$0002
     trb $1b92
     lda $1b8c
@@ -7365,7 +7365,7 @@ loc_04ba13:
     lda #$0004
     sta $db27
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
     brl loc_04bb51
 
 loc_04ba44:
@@ -7407,7 +7407,7 @@ loc_04ba81:
     and #$0001
     sta $d9c2
     lda #$0003
-    jsl sub_7f6e09
+    jsl QueueSound
     rts
 
 loc_04ba8f:
@@ -7420,7 +7420,7 @@ loc_04ba8f:
     lda #$0000
     sta $7ef576
     lda #$0004
-    jsl sub_7f6e09
+    jsl QueueSound
     stz $d9c4
     brl loc_04bb51
 
@@ -7470,7 +7470,7 @@ loc_04bafd:
 
 loc_04bb08:
     lda #$0008
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0022
     sta $da7f
     lda #$0012
@@ -8060,7 +8060,7 @@ loc_04bfb1:
     stx $da8f
     jsr sub_04d4d8
     lda #$000b
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04bfdf:
     lda $da11
@@ -8731,7 +8731,7 @@ loc_04c565:
     lda #$0008
     jsl sub_7f6df8
     lda #$0061
-    jsl sub_7f6e09
+    jsl QueueSound
     brl loc_04c673
 
 loc_04c5ac:
@@ -9335,9 +9335,9 @@ loc_04ca38:
 
 loc_04ca5e:
     lda #$00ff
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$00c4
-    jsl sub_7f6e09
+    jsl QueueSound
     inc $da69
     rts
 
@@ -9510,7 +9510,7 @@ loc_04cb66:
     lda #$0004
     trb $e087
     lda #$0064
-    jsl sub_7f6e09
+    jsl QueueSound
     inc $e089
     rts
 
@@ -9525,7 +9525,7 @@ loc_04cbe1:
     tsb $e087
     inc $e089
     lda #$008b
-    jsl sub_7f6e09
+    jsl QueueSound
     ldx $e08d
     lda $e093
     beq loc_04cc07
@@ -9647,7 +9647,7 @@ loc_04cccd:
 
 loc_04ccd5:
     lda #$000b
-    jsl sub_7f6e09
+    jsl QueueSound
     jsr sub_04cd31
     bra loc_04cd07
 
@@ -9916,7 +9916,7 @@ loc_04d0dd:
     lda #$0400
     tsb $db01
     lda #$001a
-    jsl sub_7f6e09
+    jsl QueueSound
     lda #$0005
     sta $db03
     rep #$20
@@ -10021,7 +10021,7 @@ loc_04d1dc:
     sty $da83
     jsr sub_04d49a
     lda #$008b
-    jsl sub_7f6e09
+    jsl QueueSound
     brl loc_04ce4e
     ldy $e099
     sty $da83
@@ -10042,7 +10042,7 @@ loc_04d1dc:
 loc_04d233:
     jsr sub_04d49a
     lda #$008b
-    jsl sub_7f6e09
+    jsl QueueSound
     brl loc_04ce4e
     jsl sub_7f6181
     brl loc_04ce4e
@@ -10087,7 +10087,7 @@ loc_04d298:
 loc_04d29b:
     sta $da85
     lda #$001a
-    jsl sub_7f6e09
+    jsl QueueSound
     brl loc_04ce4e
     dec $da85
     bne loc_04d2ca
@@ -11269,7 +11269,7 @@ loc_04dba5:
 
 loc_04dbaa:
     lda #$008b
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04dbb1:
     rts
@@ -11305,7 +11305,7 @@ loc_04dbe8:
 
 loc_04dbed:
     lda #$002b
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04dbf4:
     rts
@@ -11598,7 +11598,7 @@ loc_04de2f:
     lda #$0010
     trb $1b88
     lda #$006f
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04de56:
     sep #$20
@@ -13278,7 +13278,7 @@ sub_04ec76:
     lda #$70
     ldx #$8258
     ldy #$0200
-    jsl sub_7f0a22
+    jsl DmaToCgram
     lda #$00
     sta $17f2
     lda #$70
@@ -13546,7 +13546,7 @@ loc_04f078:
     plp
     rts
 
-sub_04f07a:
+UpdateMapCursor:    ; adds the d-pad speed (momentum, up to $400) to the cursor $da91/$da92 (watch: both written at 04:F181 and 04:F19B while the cursor moved on the map)
     php
     lda $1292
     bit #$0f00
@@ -13715,7 +13715,7 @@ loc_04f19b:
     sta $da92
     rts
 
-sub_04f19f:
+SelectMapUnit:    ; finds the enemy unit under the cursor and stores it in $e09f, bit $40 of $da8d (watch: $e09f written at 04:F295 only while the cursor sat on the first fighters)
 .a16
     php
     rep #$20
@@ -13794,7 +13794,7 @@ loc_04f22b:
     lda #$0008
     tsb $da8d
     lda #$000b
-    jsl sub_7f6e09
+    jsl QueueSound
 
 loc_04f249:
     lda $001c,y
